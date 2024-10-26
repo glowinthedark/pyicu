@@ -1,11 +1,11 @@
-Version 2.13.1 ->
+Version 2.13.1 -> 2.14
 ----------------------
   - added wrappers for UCPMap.get|getRange and Char.getIntPropertyMap
   - added wrapper for Locale.getUnicodeKeywordValue
   - added wrapper for UnicodeString.remove, UnicodeString.removeBetween
   - added wrapper for UnicodeString.retainBetween, UnicodeString.truncate
   - fixed bogus UBool uses on stack instead of int (Martin Jansche)
-  - 
+  - added support for ICU 76.1
 
 Version 2.13 -> 2.13.1
 ----------------------

@@ -1050,7 +1050,11 @@ static PyObject *t_unicodestring_append(t_unicodestring *self, PyObject *args)
         }
         if (!parseArgs(args, "i", &i))
         {
+#if PY_VERSION_HEX < 0x030d0000
             if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+            if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                 self->object->append((UChar) i);
             else
                 self->object->append((UChar32) i);
@@ -1322,7 +1326,11 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
         {
             int i;
 
+#if PY_VERSION_HEX < 0x030d0000
             if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+            if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                 i = self->object->indexOf((UChar) c);
             else
                 i = self->object->indexOf((UChar32) c);
@@ -1347,7 +1355,11 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
             {
                 int i;
 
+#if PY_VERSION_HEX < 0x030d0000
                 if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+                if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                     i = self->object->indexOf((UChar) c, start);
                 else
                     i = self->object->indexOf((UChar32) c, start);
@@ -1375,7 +1387,11 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
             {
                 int i;
 
+#if PY_VERSION_HEX < 0x030d0000
                 if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+                if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                     i = self->object->indexOf((UChar) c, start, len);
                 else
                     i = self->object->indexOf((UChar32) c, start, len);
@@ -1421,7 +1437,11 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
         {
             int i;
 
+#if PY_VERSION_HEX < 0x030d0000
             if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+            if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                 i = self->object->lastIndexOf((UChar) c);
             else
                 i = self->object->lastIndexOf((UChar32) c);
@@ -1446,7 +1466,11 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
             {
                 int i;
 
+#if PY_VERSION_HEX < 0x030d0000
                 if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+                if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                     i = self->object->lastIndexOf((UChar) c, start);
                 else
                     i = self->object->lastIndexOf((UChar32) c, start);
@@ -1474,7 +1498,11 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
             {
                 int i;
 
+#if PY_VERSION_HEX < 0x030d0000
                 if (sizeof(Py_UNICODE) == sizeof(UChar))
+#else
+                if (sizeof(wchar_t) == sizeof(UChar))
+#endif
                     i = self->object->lastIndexOf((UChar) c, start, len);
                 else
                     i = self->object->lastIndexOf((UChar32) c, start, len);
