@@ -256,6 +256,17 @@ public:
     }
 };
 
+class None {
+public:
+    int parse(PyObject *arg) const
+    {
+        if (arg != Py_None)
+            return -1;
+
+        return 0;
+    }
+};
+
 class StringOrUnicodeToFSCharsArg {
 private:
     charsArg *const p;
@@ -451,7 +462,27 @@ private:
 public:
     UnicodeStringArg() = delete;
 
-    explicit UnicodeStringArg(UnicodeString **param1) noexcept : u(param1) {}
+    explicit UnicodeStringArg(UnicodeString **param) noexcept : u(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!isUnicodeString(arg))
+            return -1;
+
+        *u = (UnicodeString *) ((t_uobject *) arg)->object;
+        return 0;
+    }
+};
+
+class UnicodeStringAndPythonObject {
+private:
+    UnicodeString **const u;
+    PyObject **const obj;
+
+public:
+    UnicodeStringAndPythonObject() = delete;
+
+    explicit UnicodeStringAndPythonObject(UnicodeString **param1, PyObject **param2) noexcept : u(param1), obj(param2) {}
 
     int parse(PyObject *arg) const
     {
@@ -459,6 +490,7 @@ public:
             return -1;
         
         *u = (UnicodeString *) ((t_uobject *) arg)->object;
+        *obj = arg;
         return 0;
     }
 };
@@ -473,6 +505,7 @@ _IS_POD(Double);
 _IS_POD(Int);
 _IS_POD(IntArray);
 _IS_POD(BytesToCStringAndSize);
+_IS_POD(None);
 _IS_POD(PythonBytes);
 _IS_POD(SavedString);
 _IS_POD(StringOrUnicodeToFSCharsArg);
@@ -482,6 +515,7 @@ _IS_POD(String);
 _IS_POD(ICUObject<UObject>);
 _IS_POD(ICUObjectArray<UObject>);
 _IS_POD(UnicodeStringArg);
+_IS_POD(UnicodeStringAndPythonObject);
 
 #undef _IS_POD
 
@@ -495,12 +529,14 @@ using f = StringOrUnicodeToFSCharsArg;
 using H = IntArray;
 using i = Int;
 using k = BytesToCStringAndSize;
+using N = None;
 using n = StringOrUnicodeToUtf8CharsArg;
 using m = StringOrUnicodeToUtf8CharsArgArray;
 using S = String;
 template <typename T> using P = ICUObject<T>;
 template <typename T> using Q = ICUObjectArray<T>;
 using U = UnicodeStringArg;
+using V = UnicodeStringAndPythonObject;
 using W = SavedString;
 
 // Argument parsing

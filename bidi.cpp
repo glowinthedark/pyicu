@@ -30,6 +30,8 @@
 #include "bidi.h"
 #include "macros.h"
 
+#include "arg.h"
+
 DECLARE_CONSTANTS_TYPE(UBiDiDirection)
 DECLARE_CONSTANTS_TYPE(UBiDiReorderingMode)
 DECLARE_CONSTANTS_TYPE(UBiDiReorderingOption)
@@ -225,7 +227,7 @@ static int t_bidi_init(t_bidi *self, PyObject *args, PyObject *kwds)
         return 0;
 
       case 1:
-        if (!parseArgs(args, "i", &maxLength))
+        if (!parseArgs(args, arg::i(&maxLength)))
         {
             INT_STATUS_CALL(self->object = ubidi_openSized(
                 maxLength, 0, &status));
@@ -241,7 +243,7 @@ static int t_bidi_init(t_bidi *self, PyObject *args, PyObject *kwds)
         return -1;
 
       case 2:
-        if (!parseArgs(args, "ii", &maxLength, &maxRunCount))
+        if (!parseArgs(args, arg::i(&maxLength), arg::i(&maxRunCount)))
         {
             INT_STATUS_CALL(self->object = ubidi_openSized(
                 maxLength, maxRunCount, &status));
@@ -270,7 +272,7 @@ static PyObject *t_bidi_setPara(t_bidi *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "V", &u, &obj))
+        if (!parseArgs(args, arg::V(&u, &obj)))
         {
             STATUS_CALL(ubidi_setPara(self->object, u->getBuffer(), u->length(),
                                       UBIDI_DEFAULT_LTR, NULL, &status));
@@ -288,7 +290,7 @@ static PyObject *t_bidi_setPara(t_bidi *self, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "Vi", &u, &obj, &level))
+        if (!parseArgs(args, arg::V(&u, &obj), arg::i(&level)))
         {
             STATUS_CALL(ubidi_setPara(self->object, u->getBuffer(), u->length(),
                                       level, NULL, &status));
@@ -342,7 +344,7 @@ static PyObject *t_bidi_setContext(t_bidi *self, PyObject *args)
         Py_RETURN_NONE;
 
       case 1:
-        if (!parseArgs(args, "V", &u, &u_obj))
+        if (!parseArgs(args, arg::V(&u, &u_obj)))
         {
             STATUS_CALL(ubidi_setContext(
                 self->object, u->getBuffer(), u->length(), NULL, 0, &status));
@@ -356,7 +358,7 @@ static PyObject *t_bidi_setContext(t_bidi *self, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "VV", &u, &u_obj, &v, &v_obj))
+        if (!parseArgs(args, arg::V(&u, &u_obj), arg::V(&v, &v_obj)))
         {
             STATUS_CALL(ubidi_setContext(
                 self->object, u->getBuffer(), u->length(),
@@ -369,7 +371,7 @@ static PyObject *t_bidi_setContext(t_bidi *self, PyObject *args)
 
             Py_RETURN_NONE;
         }
-        if (!parseArgs(args, "NV", &u_obj, &v, &v_obj))
+        if (!parseArgs(args, arg::N(), arg::V(&v, &v_obj)))
         {
             STATUS_CALL(ubidi_setContext(
                 self->object, NULL, 0, v->getBuffer(), v->length(), &status));
@@ -380,7 +382,7 @@ static PyObject *t_bidi_setContext(t_bidi *self, PyObject *args)
 
             Py_RETURN_NONE;
         }
-        if (!parseArgs(args, "VN", &u, &u_obj, &v_obj))
+        if (!parseArgs(args, arg::V(&u, &u_obj), arg::N()))
         {
             STATUS_CALL(ubidi_setContext(
                 self->object, u->getBuffer(), u->length(), NULL, 0, &status));
@@ -391,7 +393,7 @@ static PyObject *t_bidi_setContext(t_bidi *self, PyObject *args)
 
             Py_RETURN_NONE;
         }
-        if (!parseArgs(args, "NN", &u_obj, &v_obj))
+        if (!parseArgs(args, arg::N(), arg::N()))
         {
             STATUS_CALL(ubidi_setContext(
                 self->object, NULL, 0, NULL, 0, &status));
@@ -437,7 +439,7 @@ static PyObject *t_bidi_setLine(t_bidi *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &start, &limit) &&
+        if (!parseArgs(args, arg::i(&start), arg::i(&limit)) &&
             limit - start > 0 &&
             limit - start <= ubidi_getLength(self->object))
         {
@@ -519,7 +521,7 @@ static PyObject *t_bidi_getLevelAt(t_bidi *self, PyObject *arg)
 {
     int charIndex;
 
-    if (!parseArg(arg, "i", &charIndex))
+    if (!parseArg(arg, arg::i(&charIndex)))
     {
         UBiDiLevel level = ubidi_getLevelAt(self->object, charIndex);
         return PyInt_FromLong(level);
@@ -554,7 +556,7 @@ static PyObject *t_bidi_getParagraph(t_bidi *self, PyObject *arg)
 {
     int charIndex;
 
-    if (!parseArg(arg, "i", &charIndex))
+    if (!parseArg(arg, arg::i(&charIndex)))
     {
         int paraIndex, start, limit;
         UBiDiLevel level;
@@ -572,7 +574,7 @@ static PyObject *t_bidi_getParagraphByIndex(t_bidi *self, PyObject *arg)
 {
     int paraIndex;
 
-    if (!parseArg(arg, "i", &paraIndex))
+    if (!parseArg(arg, arg::i(&paraIndex)))
     {
         int start, limit;
         UBiDiLevel level;
@@ -598,7 +600,7 @@ static PyObject *t_bidi_getLogicalRun(t_bidi *self, PyObject *arg)
 {
     int logicalPosition;
 
-    if (!parseArg(arg, "i", &logicalPosition))
+    if (!parseArg(arg, arg::i(&logicalPosition)))
     {
         int limit = 0;
         UBiDiLevel level = 0;
@@ -615,7 +617,7 @@ static PyObject *t_bidi_getVisualRun(t_bidi *self, PyObject *arg)
 {
     int runIndex;
 
-    if (!parseArg(arg, "i", &runIndex))
+    if (!parseArg(arg, arg::i(&runIndex)))
     {
         int logicalStart = 0, length = 0;
         UBiDiDirection direction = ubidi_getVisualRun(
@@ -631,7 +633,7 @@ static PyObject *t_bidi_getLogicalIndex(t_bidi *self, PyObject *arg)
 {
     int visualIndex;
 
-    if (!parseArg(arg, "i", &visualIndex))
+    if (!parseArg(arg, arg::i(&visualIndex)))
     {
         int logicalIndex;
 
@@ -648,7 +650,7 @@ static PyObject *t_bidi_getVisualIndex(t_bidi *self, PyObject *arg)
 {
     int logicalIndex;
 
-    if (!parseArg(arg, "i", &logicalIndex))
+    if (!parseArg(arg, arg::i(&logicalIndex)))
     {
         int visualIndex;
 
@@ -729,9 +731,10 @@ static PyObject *t_bidi_getVisualMap(t_bidi *self)
 
 static PyObject *t_bidi_reorderLogical(PyTypeObject *type, PyObject *arg)
 {
-    int *levels, length;
+    int *levels;
+    size_t length;
 
-    if (!parseArg(arg, "H", &levels, &length))
+    if (!parseArg(arg, arg::H(&levels, &length)))
     {
         int *indexMap = (int *) calloc(length, sizeof(int));
 
@@ -744,7 +747,7 @@ static PyObject *t_bidi_reorderLogical(PyTypeObject *type, PyObject *arg)
 
         if (result != NULL)
         {
-            for (int i = 0; i < length; ++i)
+            for (size_t i = 0; i < length; ++i)
                 PyTuple_SET_ITEM(result, i, PyInt_FromLong(indexMap[i]));
         }
         free(indexMap);
@@ -757,9 +760,10 @@ static PyObject *t_bidi_reorderLogical(PyTypeObject *type, PyObject *arg)
 
 static PyObject *t_bidi_reorderVisual(PyTypeObject *type, PyObject *arg)
 {
-    int *levels, length;
+    int *levels;
+    size_t length;
 
-    if (!parseArg(arg, "H", &levels, &length))
+    if (!parseArg(arg, arg::H(&levels, &length)))
     {
         int *indexMap = (int *) calloc(length, sizeof(int));
 
@@ -772,7 +776,7 @@ static PyObject *t_bidi_reorderVisual(PyTypeObject *type, PyObject *arg)
 
         if (result != NULL)
         {
-            for (int i = 0; i < length; ++i)
+            for (size_t i = 0; i < length; ++i)
                 PyTuple_SET_ITEM(result, i, PyInt_FromLong(indexMap[i]));
         }
         free(indexMap);
@@ -785,13 +789,14 @@ static PyObject *t_bidi_reorderVisual(PyTypeObject *type, PyObject *arg)
 
 static PyObject *t_bidi_invertMap(PyTypeObject *type, PyObject *arg)
 {
-    int *srcMap, srcLength;
+    int *srcMap;
+    size_t srcLength;
 
-    if (!parseArg(arg, "H", &srcMap, &srcLength))
+    if (!parseArg(arg, arg::H(&srcMap, &srcLength)))
     {
         int maxSrc = 0;
 
-        for (int i = 0; i < srcLength; ++i)
+        for (size_t i = 0; i < srcLength; ++i)
             if (srcMap[i] > maxSrc)
                 maxSrc = srcMap[i];
 
@@ -820,11 +825,11 @@ static PyObject *t_bidi_invertMap(PyTypeObject *type, PyObject *arg)
 
 static PyObject *t_bidi_setInverse(t_bidi *self, PyObject *arg)
 {
-    int inverse;
+    UBool inverse;
 
-    if (!parseArg(arg, "b", &inverse))
+    if (!parseArg(arg, arg::b(&inverse)))
     {
-        ubidi_setInverse(self->object, (UBool) inverse);
+        ubidi_setInverse(self->object, inverse);
         Py_RETURN_NONE;
     }
 
@@ -839,11 +844,11 @@ static PyObject *t_bidi_isInverse(t_bidi *self)
 
 static PyObject *t_bidi_orderParagraphsLTR(t_bidi *self, PyObject *arg)
 {
-    int ltr;
+    UBool ltr;
 
-    if (!parseArg(arg, "b", &ltr))
+    if (!parseArg(arg, arg::b(&ltr)))
     {
-        ubidi_orderParagraphsLTR(self->object, (UBool) ltr);
+        ubidi_orderParagraphsLTR(self->object, ltr);
         Py_RETURN_NONE;
     }
 
@@ -858,11 +863,11 @@ static PyObject *t_bidi_isOrderParagraphsLTR(t_bidi *self)
 
 static PyObject *t_bidi_setReorderingMode(t_bidi *self, PyObject *arg)
 {
-    int mode;
+    UBiDiReorderingMode mode;
 
-    if (!parseArg(arg, "i", &mode))
+    if (!parseArg(arg, arg::Enum<UBiDiReorderingMode>(&mode)))
     {
-        ubidi_setReorderingMode(self->object, (UBiDiReorderingMode) mode);
+        ubidi_setReorderingMode(self->object, mode);
         Py_RETURN_NONE;
     }
 
@@ -878,7 +883,7 @@ static PyObject *t_bidi_setReorderingOptions(t_bidi *self, PyObject *arg)
 {
     int options;
 
-    if (!parseArg(arg, "i", &options))
+    if (!parseArg(arg, arg::i(&options)))
     {
         ubidi_setReorderingOptions(self->object, options);
         Py_RETURN_NONE;
@@ -901,7 +906,7 @@ static PyObject *t_bidi_getBaseDirection(PyTypeObject *type, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         return PyInt_FromLong(ubidi_getBaseDirection(
             u->getBuffer(), u->length()));
 
@@ -918,7 +923,7 @@ static PyObject *t_bidi_writeReordered(t_bidi *self, PyObject *args)
         break;
 
       case 1:
-        if (!parseArgs(args, "i", &options))
+        if (!parseArgs(args, arg::i(&options)))
           break;
         return PyErr_SetArgsError((PyObject *) self, "writeReordered", args);
 
@@ -970,7 +975,7 @@ static PyObject *t_bidi_writeReverse(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &src, &_src))
+        if (!parseArgs(args, arg::S(&src, &_src)))
         {
             options = 0;
             break;
@@ -978,7 +983,7 @@ static PyObject *t_bidi_writeReverse(PyTypeObject *type, PyObject *args)
         return PyErr_SetArgsError((PyObject *) type, "writeReverse", args);
 
       case 2:
-        if (!parseArgs(args, "Si", &src, &_src, &options))
+        if (!parseArgs(args, arg::S(&src, &_src), arg::i(&options)))
           break;
         return PyErr_SetArgsError((PyObject *) type, "writeReverse", args);
 
@@ -1043,22 +1048,35 @@ static PyObject *t_biditransform_transform(t_biditransform *self,
 
     switch (PyTuple_Size(args)) {
       case 5:
-        if (!parseArgs(args, "Siiii", &src, &_src,
-                       &inParaLevel, &inOrder, &outParaLevel, &outOrder))
+        if (!parseArgs(args,
+                       arg::S(&src, &_src),
+                       arg::i(&inParaLevel),
+                       arg::Enum<UBiDiOrder>(&inOrder),
+                       arg::i(&outParaLevel),
+                       arg::Enum<UBiDiOrder>(&outOrder)))
           break;
         return PyErr_SetArgsError((PyObject *) self, "transform", args);
 
       case 6:
-        if (!parseArgs(args, "Siiiii", &src, &_src,
-                       &inParaLevel, &inOrder, &outParaLevel, &outOrder,
-                       &doMirroring))
+        if (!parseArgs(args,
+                       arg::S(&src, &_src),
+                       arg::i(&inParaLevel),
+                       arg::Enum<UBiDiOrder>(&inOrder),
+                       arg::i(&outParaLevel),
+                       arg::Enum<UBiDiOrder>(&outOrder),
+                       arg::Enum<UBiDiMirroring>(&doMirroring)))
           break;
         return PyErr_SetArgsError((PyObject *) self, "transform", args);
 
       case 7:
-        if (!parseArgs(args, "Siiiiii", &src, &_src,
-                       &inParaLevel, &inOrder, &outParaLevel, &outOrder,
-                       &doMirroring, &shapingOptions))
+        if (!parseArgs(args,
+                       arg::S(&src, &_src),
+                       arg::i(&inParaLevel),
+                       arg::Enum<UBiDiOrder>(&inOrder),
+                       arg::i(&outParaLevel),
+                       arg::Enum<UBiDiOrder>(&outOrder),
+                       arg::Enum<UBiDiMirroring>(&doMirroring),
+                       arg::i(&shapingOptions)))
           break;
         return PyErr_SetArgsError((PyObject *) self, "transform", args);
 
