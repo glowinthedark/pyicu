@@ -646,14 +646,14 @@ int isInstance(PyObject *arg, classid id, PyTypeObject *type)
     return 0;
 }
 
-UObject **pl2cpa(PyObject *arg, int *len, classid id, PyTypeObject *type)
+UObject **pl2cpa(PyObject *arg, size_t *len, classid id, PyTypeObject *type)
 {
     if (PySequence_Check(arg))
     {
         *len = (int) PySequence_Size(arg);
         UObject **array = (UObject **) calloc(*len, sizeof(UObject *));
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
             if (isInstance(obj, id, type))
@@ -675,11 +675,11 @@ UObject **pl2cpa(PyObject *arg, int *len, classid id, PyTypeObject *type)
     return NULL;
 }
 
-PyObject *cpa2pl(UObject **array, int len, PyObject *(*wrap)(UObject *, int))
+PyObject *cpa2pl(UObject **array, size_t len, PyObject *(*wrap)(UObject *, int))
 {
     PyObject *list = PyList_New(len);
 
-    for (int i = 0; i < len; i++)
+    for (size_t i = 0; i < len; i++)
         PyList_SET_ITEM(list, i, wrap(array[i], T_OWNED));
 
     return list;
@@ -798,7 +798,7 @@ static UnicodeString *toUnicodeStringArray(PyObject *arg, int *len)
     return NULL;
 }
 
-static charsArg *toCharsArgArray(PyObject *arg, int *len)
+charsArg *toCharsArgArray(PyObject *arg, size_t *len)
 {
     if (PySequence_Check(arg))
     {
@@ -808,7 +808,7 @@ static charsArg *toCharsArgArray(PyObject *arg, int *len)
         if (!array)
             return (charsArg *) PyErr_NoMemory();
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
             if (PyUnicode_Check(obj))
@@ -838,7 +838,7 @@ static charsArg *toCharsArgArray(PyObject *arg, int *len)
     return NULL;
 }
 
-static int *toIntArray(PyObject *arg, int *len)
+int *toIntArray(PyObject *arg, size_t *len)
 {
     if (PySequence_Check(arg))
     {
@@ -848,7 +848,7 @@ static int *toIntArray(PyObject *arg, int *len)
         if (!array)
           return (int *) PyErr_NoMemory();
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
 #if PY_MAJOR_VERSION < 3
@@ -1390,9 +1390,11 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
           {
               charsArg **array = va_arg(list, charsArg **);
               int *len = va_arg(list, int *);
-              *array = toCharsArgArray(arg, len);
+              size_t size;
+              *array = toCharsArgArray(arg, &size);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 
@@ -1454,9 +1456,11 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
               int *len = va_arg(list, int *);
               classid id = va_arg(list, classid);
               PyTypeObject *type = va_arg(list, PyTypeObject *);
-              *array = pl2cpa(arg, len, id, type);
+              size_t size;
+              *array = pl2cpa(arg, &size, id, type);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 
@@ -1548,9 +1552,11 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
           {
               int **array = va_arg(list, int **);
               int *len = va_arg(list, int *);
-              *array = toIntArray(arg, len);
+              size_t size;
+              *array = toIntArray(arg, &size);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 

@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2023 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -38,8 +38,10 @@
 
 #include "bases.h"
 #include "locale.h"
-#include "macros.h"
 #include "unicodeset.h"
+#include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(ULocDataLocaleType)
 DECLARE_CONSTANTS_TYPE(UResType)
@@ -659,14 +661,14 @@ static int t_locale_init(t_locale *self, PyObject *args, PyObject *kwds)
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "n", &language))
+        if (!parseArgs(args, arg::n(&language)))
         {
             self->object = new Locale(language, NULL, NULL,
                                       kwds != NULL ? keywords.c_str() : NULL);
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "i", &lcid))
+        if (!parseArgs(args, arg::i(&lcid)))
         {
             char code[128];
 
@@ -683,7 +685,7 @@ static int t_locale_init(t_locale *self, PyObject *args, PyObject *kwds)
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "nn", &language, &country))
+        if (!parseArgs(args, arg::n(&language), arg::n(&country)))
         {
             self->object = new Locale(language, country, NULL,
                                       kwds != NULL ? keywords.c_str() : NULL);
@@ -693,7 +695,7 @@ static int t_locale_init(t_locale *self, PyObject *args, PyObject *kwds)
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 3:
-        if (!parseArgs(args, "nnn", &language, &country, &variant))
+        if (!parseArgs(args, arg::n(&language), arg::n(&country), arg::n(&variant)))
         {
             self->object = new Locale(language, country, variant,
                                       kwds != NULL ? keywords.c_str() : NULL);
@@ -703,7 +705,7 @@ static int t_locale_init(t_locale *self, PyObject *args, PyObject *kwds)
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 4:
-        if (!parseArgs(args, "nnnn", &language, &country, &variant, &keywords))
+        if (!parseArgs(args, arg::n(&language), arg::n(&country), arg::n(&variant), arg::n(&keywords)))
         {
             self->object = new Locale(language, country, variant, keywords);
             self->flags = T_OWNED;
@@ -778,20 +780,19 @@ static PyObject *t_locale_getDisplayLanguage(t_locale *self, PyObject *args)
         self->object->getDisplayLanguage(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->getDisplayLanguage(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getDisplayLanguage(*u);
             Py_RETURN_ARG(args, 0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU", TYPE_CLASSID(Locale),
-                       &locale, &u))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale), arg::U(&u)))
         {
             self->object->getDisplayLanguage(*locale, *u);
             Py_RETURN_ARG(args, 1);
@@ -813,20 +814,19 @@ static PyObject *t_locale_getDisplayScript(t_locale *self, PyObject *args)
         self->object->getDisplayScript(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->getDisplayScript(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getDisplayScript(*u);
             Py_RETURN_ARG(args, 0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU", TYPE_CLASSID(Locale),
-                       &locale, &u))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale), arg::U(&u)))
         {
             self->object->getDisplayScript(*locale, *u);
             Py_RETURN_ARG(args, 1);
@@ -848,20 +848,19 @@ static PyObject *t_locale_getDisplayCountry(t_locale *self, PyObject *args)
         self->object->getDisplayCountry(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->getDisplayCountry(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getDisplayCountry(*u);
             Py_RETURN_ARG(args, 0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU", TYPE_CLASSID(Locale),
-                       &locale, &u))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale), arg::U(&u)))
         {
             self->object->getDisplayCountry(*locale, *u);
             Py_RETURN_ARG(args, 1);
@@ -883,20 +882,19 @@ static PyObject *t_locale_getDisplayVariant(t_locale *self, PyObject *args)
         self->object->getDisplayVariant(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->getDisplayVariant(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getDisplayVariant(*u);
             Py_RETURN_ARG(args, 0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU", TYPE_CLASSID(Locale),
-                       &locale, &u))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale), arg::U(&u)))
         {
             self->object->getDisplayVariant(*locale, *u);
             Py_RETURN_ARG(args, 1);
@@ -918,19 +916,19 @@ static PyObject *t_locale_getDisplayName(t_locale *self, PyObject *args)
         self->object->getDisplayName(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->getDisplayName(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getDisplayName(*u);
             Py_RETURN_ARG(args, 0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU", TYPE_CLASSID(Locale), &locale, &u))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale), arg::U(&u)))
         {
             self->object->getDisplayName(*locale, *u);
             Py_RETURN_ARG(args, 1);
@@ -964,7 +962,7 @@ static PyObject *t_locale_getKeywordValue(t_locale *self, PyObject *arg)
 {
     charsArg name;
 
-    if (!parseArg(arg, "n", &name))
+    if (!parseArg(arg, arg::n(&name)))
     {
         char buf[ULOC_FULLNAME_CAPACITY];
         int32_t len;
@@ -986,7 +984,7 @@ static PyObject *t_locale_setKeywordValue(t_locale *self, PyObject *args)
 {
     charsArg name, value;
 
-    if (!parseArgs(args, "nn", &name, &value))
+    if (!parseArgs(args, arg::n(&name), arg::n(&value)))
     {
         STATUS_CALL(self->object->setKeywordValue(name, value, status));
         Py_RETURN_NONE;
@@ -999,7 +997,7 @@ static PyObject *t_locale_removeKeywordValue(t_locale *self, PyObject *arg)
 {
     charsArg name;
 
-    if (!parseArg(arg, "n", &name))
+    if (!parseArg(arg, arg::n(&name)))
     {
         STATUS_CALL(self->object->setKeywordValue(name, "", status));
         Py_RETURN_NONE;
@@ -1190,7 +1188,7 @@ static PyObject *t_locale_setDefault(PyTypeObject *type, PyObject *args)
         STATUS_CALL(Locale::setDefault(NULL, status));
         Py_RETURN_NONE;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             STATUS_CALL(Locale::setDefault(*locale, status)); /* transient */
             Py_RETURN_NONE;
@@ -1211,7 +1209,7 @@ static PyObject *t_locale_createFromName(PyTypeObject *type, PyObject *args)
         locale = Locale::createFromName(NULL);
         return wrap_Locale(locale);
       case 1:
-        if (!parseArgs(args, "n", &name))
+        if (!parseArgs(args, arg::n(&name)))
         {
             locale = Locale::createFromName(name);
             return wrap_Locale(locale);
@@ -1227,7 +1225,7 @@ static PyObject *t_locale_createCanonical(PyTypeObject *type, PyObject *arg)
     Locale locale;
     charsArg name;
 
-    if (!parseArg(arg, "n", &name))
+    if (!parseArg(arg, arg::n(&name)))
     {
         locale = Locale::createCanonical(name);
         return wrap_Locale(locale);
@@ -1243,7 +1241,7 @@ static PyObject *t_locale_forLanguageTag(PyTypeObject *type, PyObject *arg)
     Locale locale;
     charsArg name;
 
-    if (!parseArg(arg, "n", &name))
+    if (!parseArg(arg, arg::n(&name)))
     {
         STATUS_CALL(locale = Locale::forLanguageTag(name.c_str(), status));
         return wrap_Locale(locale);
@@ -1280,7 +1278,7 @@ static PyObject *t_locale_getUnicodeKeywordValue(t_locale *self, PyObject *arg)
     StringByteSink<struct sink> sbs(&buffer);
     charsArg name;
 
-    if (!parseArg(arg, "n", &name))
+    if (!parseArg(arg, arg::n(&name)))
     {
         STATUS_CALL(self->object->getUnicodeKeywordValue(name.c_str(), sbs, status))
         return PyUnicode_FromUnicodeString(&buffer.u);
@@ -1364,7 +1362,7 @@ static long t_locale_hash(t_locale *self)
 static PyObject *t_locale_richcmp(t_locale *self, PyObject *arg, int op)
 {
     Locale *object;
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &object))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &object)))
     {
         switch (op) {
           case Py_EQ: Py_RETURN_BOOL(*self->object == *object);
@@ -1405,7 +1403,7 @@ static int t_resourcebundle_init(t_resourcebundle *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             INT_STATUS_CALL(bundle = new ResourceBundle(*u, status));
             self->object = bundle;
@@ -1413,8 +1411,9 @@ static int t_resourcebundle_init(t_resourcebundle *self,
             break;
         }
       case 2:
-        if (!parseArgs(args, "SP", TYPE_CLASSID(Locale),
-                       &u, &_u, &locale))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(bundle = new ResourceBundle(*u, *locale, status));
             self->object = bundle;
@@ -1446,7 +1445,7 @@ static PyObject *t_resourcebundle_getString(t_resourcebundle *self,
         STATUS_CALL(_u = self->object->getString(status));
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             STATUS_CALL(u->setTo(self->object->getString(status)));
             Py_RETURN_ARG(args, 0);
@@ -1522,7 +1521,7 @@ static PyObject *t_resourcebundle_getNextString(t_resourcebundle *self,
         STATUS_CALL(_u = self->object->getNextString(status));
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             STATUS_CALL(u->setTo(self->object->getNextString(status)));
             Py_RETURN_ARG(args, 0);
@@ -1539,7 +1538,7 @@ static PyObject *t_resourcebundle_get(t_resourcebundle *self, PyObject *arg)
     charsArg key;
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         ResourceBundle rb = self->object->get(i, status);
 
@@ -1549,7 +1548,7 @@ static PyObject *t_resourcebundle_get(t_resourcebundle *self, PyObject *arg)
         return wrap_ResourceBundle(rb);
     }
 
-    if (!parseArg(arg, "n", &key))
+    if (!parseArg(arg, arg::n(&key)))
     {
         ResourceBundle rb = self->object->get(key, status);
 
@@ -1568,7 +1567,7 @@ static PyObject *t_resourcebundle_getWithFallback(t_resourcebundle *self,
     UErrorCode status = U_ZERO_ERROR;
     charsArg key;
 
-    if (!parseArg(arg, "n", &key))
+    if (!parseArg(arg, arg::n(&key)))
     {
         ResourceBundle rb = self->object->getWithFallback(key, status);
 
@@ -1591,23 +1590,23 @@ static PyObject *t_resourcebundle_getStringEx(t_resourcebundle *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &i))
+        if (!parseArgs(args, arg::i(&i)))
         {
             STATUS_CALL(_u = self->object->getStringEx(i, status));
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "n", &key))
+        if (!parseArgs(args, arg::n(&key)))
         {
             STATUS_CALL(_u = self->object->getStringEx(key, status));
             return PyUnicode_FromUnicodeString(&_u);
         }
       case 2:
-        if (!parseArgs(args, "iU", &i, &u))
+        if (!parseArgs(args, arg::i(&i), arg::U(&u)))
         {
             STATUS_CALL(u->setTo(self->object->getStringEx(i, status)));
             Py_RETURN_ARG(args, 1);
         }
-        if (!parseArgs(args, "nU", &key, &u))
+        if (!parseArgs(args, arg::n(&key), arg::U(&u)))
         {
             STATUS_CALL(u->setTo(self->object->getStringEx(key, status)));
             Py_RETURN_ARG(args, 1);
@@ -1657,7 +1656,8 @@ static PyObject *t_resourcebundle_getLocale(t_resourcebundle *self,
       case 0:
         return wrap_Locale(self->object->getLocale());
       case 1:
-        if (!parseArgs(args, "i", &type))
+        static_assert(sizeof(type) == sizeof(int), "Wrong size of ULocDataLocaleType");
+        if (!parseArgs(args, arg::i((int *) &type)))
         {
             Locale locale;
 
@@ -1689,7 +1689,7 @@ static PyObject *t_resourcebundle_setAppData(PyTypeObject *type,
 {
     charsArg packageName, path;
 
-    if (!parseArgs(args, "nf", &packageName, &path))
+    if (!parseArgs(args, arg::n(&packageName), arg::f(&path)))
     {
         HANDLE fd = CreateFile(path, GENERIC_READ, FILE_SHARE_READ,
                                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -1750,7 +1750,7 @@ static PyObject *t_resourcebundle_setAppData(PyTypeObject *type,
 {
     charsArg packageName, path;
 
-    if (!parseArgs(args, "nf", &packageName, &path))
+    if (!parseArgs(args, arg::n(&packageName), arg::f(&path)))
     {
         int fd = open(path, O_RDONLY);
         UErrorCode status = U_ZERO_ERROR;
@@ -1851,7 +1851,7 @@ static int t_localedata_init(t_localedata *self, PyObject *args, PyObject *kwds)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "n", &id))
+        if (!parseArgs(args, arg::n(&id)))
         {
             ULocaleData *locale_data;
 
@@ -1884,9 +1884,9 @@ static PyObject *t_localedata_getNoSubstitute(t_localedata *self)
 
 static PyObject *t_localedata_setNoSubstitute(t_localedata *self, PyObject *arg)
 {
-    int setting;
+    UBool setting;
 
-    if (!parseArg(arg, "b", &setting))
+    if (!parseArg(arg, arg::b(&setting)))
     {
         ulocdata_setNoSubstitute(self->object, setting);
         Py_RETURN_NONE;
@@ -1931,7 +1931,7 @@ static PyObject *t_localedata_getDelimiter(t_localedata *self, PyObject *arg)
 {
     ULocaleDataDelimiterType type;
 
-    if (!parseArg(arg, "i", &type))
+    if (!parseArg(arg, arg::Enum<ULocaleDataDelimiterType>(&type)))
     {
         UChar buffer[256];
         int size;
@@ -1971,7 +1971,7 @@ static PyObject *t_localedata_getExemplarSet(t_localedata *self, PyObject *args)
         }
         break;
       case 1:
-        if (!parseArgs(args, "i", &type))
+        if (!parseArgs(args, arg::Enum<ULocaleDataExemplarSetType>(&type)))
         {
             USet *set;
 
@@ -1981,7 +1981,9 @@ static PyObject *t_localedata_getExemplarSet(t_localedata *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &options, &type))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::Enum<ULocaleDataExemplarSetType>(&type)))
         {
             USet *set;
 
@@ -2004,14 +2006,14 @@ static PyObject *t_region_getInstance(PyTypeObject *type, PyObject *arg)
     charsArg region_code;
     int32_t code;
 
-    if (!parseArg(arg, "n", &region_code))
+    if (!parseArg(arg, arg::n(&region_code)))
     {
         const Region *region;
 
         STATUS_CALL(region = Region::getInstance(region_code, status));
         return wrap_Region(region, 0);
     }
-    if (!parseArg(arg, "i", &code))
+    if (!parseArg(arg, arg::i(&code)))
     {
         const Region *region;
 
@@ -2051,7 +2053,7 @@ static PyObject *t_region_getContainingRegion(t_region *self, PyObject *args)
             return wrap_Region(region, 0);
 
       case 1:
-        if (!parseArgs(args, "i", &region_type))
+        if (!parseArgs(args, arg::Enum<URegionType>(&region_type)))
         {
             region = self->object->getContainingRegion(region_type);
             if (region == NULL)
@@ -2071,7 +2073,7 @@ static PyObject *t_region_getAvailable(PyTypeObject *type, PyObject *arg)
     URegionType region_type;
     StringEnumeration *se;
 
-    if (!parseArg(arg, "i", &region_type))
+    if (!parseArg(arg, arg::Enum<URegionType>(&region_type)))
     {
         STATUS_CALL(se = Region::getAvailable(region_type, status));
         return wrap_StringEnumeration(se, T_OWNED);
@@ -2090,7 +2092,7 @@ static PyObject *t_region_getContainedRegions(t_region *self, PyObject *args)
         STATUS_CALL(se = self->object->getContainedRegions(status));
         return wrap_StringEnumeration(se, T_OWNED);
       case 1:
-        if (!parseArgs(args, "i", &region_type))
+        if (!parseArgs(args, arg::Enum<URegionType>(&region_type)))
         {
             STATUS_CALL(se = self->object->getContainedRegions(
                             region_type, status));
@@ -2118,9 +2120,9 @@ static PyObject *t_region_getPreferredValues(t_region *self)
 
 static PyObject *t_region_contains(t_region *self, PyObject *arg)
 {
-    const Region *region;
+    Region *region;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Region), &region))
+    if (!parseArg(arg, arg::P<Region>(TYPE_CLASSID(Region), &region)))
         Py_RETURN_BOOL(self->object->contains(*region));
 
     return PyErr_SetArgsError((PyObject *) self, "contains", arg);
@@ -2159,9 +2161,9 @@ static int t_localebuilder_init(t_localebuilder *self,
 
 static PyObject *t_localebuilder_setLocale(t_localebuilder *self, PyObject *arg)
 {
-    const Locale *locale;
+    Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         self->object->setLocale(*locale);
         Py_RETURN_SELF();
@@ -2175,7 +2177,7 @@ static PyObject *t_localebuilder_setLocale(t_localebuilder *self, PyObject *arg)
                                                 PyObject *arg)         \
     {                                                                  \
         charsArg carg;                                                 \
-        if (!parseArg(arg, "n", &carg))                                \
+        if (!parseArg(arg, arg::n(&carg)))                             \
         {                                                              \
             self->object->setter(carg.c_str());                        \
             Py_RETURN_SELF();                                          \
@@ -2198,7 +2200,7 @@ static PyObject *t_localebuilder_setExtension(t_localebuilder *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "nn", &key, &value) && strlen(key.c_str()) == 1)
+        if (!parseArgs(args, arg::n(&key), arg::n(&value)) && strlen(key.c_str()) == 1)
         {
             self->object->setExtension(key.c_str()[0], value.c_str());
             Py_RETURN_SELF();
@@ -2216,7 +2218,7 @@ static PyObject *t_localebuilder_setUnicodeLocaleKeyword(t_localebuilder *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "nn", &key, &type))
+        if (!parseArgs(args, arg::n(&key), arg::n(&type)))
         {
             self->object->setUnicodeLocaleKeyword(key.c_str(), type.c_str());
             Py_RETURN_SELF();
@@ -2307,7 +2309,7 @@ static PyObject *t_localematcherbuilder_setSupportedLocalesFromListString(
 {
     charsArg locales;
 
-    if (!parseArg(arg, "n", &locales))
+    if (!parseArg(arg, arg::n(&locales)))
     {
         self->object->setSupportedLocalesFromListString(locales.c_str());
         Py_RETURN_SELF();
@@ -2321,10 +2323,9 @@ static PyObject *t_localematcherbuilder_setSupportedLocales(
     t_localematcherbuilder *self, PyObject *arg)
 {
     Locale **locales;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "Q", TYPE_CLASSID(Locale), &locales, &len,
-                  TYPE_CLASSID(Locale)))
+    if (!parseArg(arg, arg::Q<Locale>(TYPE_CLASSID(Locale), &locales, &len)))
     {
         LocaleIterator it(locales, len);
 
@@ -2340,7 +2341,7 @@ static PyObject *t_localematcherbuilder_addSupportedLocale(
 {
     Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         self->object->addSupportedLocale(*locale);
         Py_RETURN_SELF();
@@ -2354,7 +2355,7 @@ static PyObject *t_localematcherbuilder_setDefaultLocale(
 {
     Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         self->object->setDefaultLocale(locale);
         Py_RETURN_SELF();
@@ -2368,7 +2369,7 @@ static PyObject *t_localematcherbuilder_setFavorSubtag(
 {
     int option;
 
-    if (!parseArg(arg, "i", &option))
+    if (!parseArg(arg, arg::i(&option)))
     {
         self->object->setFavorSubtag((ULocMatchFavorSubtag) option);
         Py_RETURN_SELF();
@@ -2382,7 +2383,7 @@ static PyObject *t_localematcherbuilder_setDemotionPerDesiredLocale(
 {
     int option;
 
-    if (!parseArg(arg, "i", &option))
+    if (!parseArg(arg, arg::i(&option)))
     {
         self->object->setDemotionPerDesiredLocale((ULocMatchDemotion) option);
         Py_RETURN_SELF();
@@ -2399,7 +2400,7 @@ static PyObject *t_localematcherbuilder_setDirection(
 {
     int option;
 
-    if (!parseArg(arg, "i", &option))
+    if (!parseArg(arg, arg::i(&option)))
     {
         self->object->setDirection((ULocMatchDirection) option);
         Py_RETURN_SELF();
@@ -2419,8 +2420,9 @@ static PyObject *t_localematcherbuilder_setMaxDistance(
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "PP", TYPE_CLASSID(Locale), TYPE_CLASSID(Locale),
-                       &desired, &supported))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &desired),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &supported)))
         {
             self->object->setMaxDistance(*desired, *supported);
             Py_RETURN_SELF();
@@ -2496,11 +2498,11 @@ static PyObject *t_localematcherresult_makeResolvedLocale(
 static PyObject *t_localematcher_getBestMatch(t_localematcher *self,
                                               PyObject *arg)
 {
-    const Locale *locale;
+    Locale *locale;
     Locale **locales;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         const Locale *result;
         STATUS_CALL(result = self->object->getBestMatch(*locale, status));
@@ -2508,8 +2510,7 @@ static PyObject *t_localematcher_getBestMatch(t_localematcher *self,
         return wrap_Locale(*result);
     }
 
-    if (!parseArg(arg, "Q", TYPE_CLASSID(Locale), &locales, &len,
-                  TYPE_CLASSID(Locale)))
+    if (!parseArg(arg, arg::Q<Locale>(TYPE_CLASSID(Locale), &locales, &len)))
     {
         LocaleIterator it(locales, len);
         const Locale *result;
@@ -2527,7 +2528,7 @@ static PyObject *t_localematcher_getBestMatchForListString(
 {
     charsArg locales;
 
-    if (!parseArg(arg, "n", &locales))
+    if (!parseArg(arg, arg::n(&locales)))
     {
         const Locale *result;
 
@@ -2546,9 +2547,9 @@ static PyObject *t_localematcher_getBestMatchResult(
 {
     Locale *locale;
     Locale **locales;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_RESULT_CALL(
             LocaleMatcherResult result = self->object->getBestMatchResult(
@@ -2556,8 +2557,7 @@ static PyObject *t_localematcher_getBestMatchResult(
             return wrap_LocaleMatcherResult(result));
     }
 
-    if (!parseArg(arg, "Q", TYPE_CLASSID(Locale), &locales, &len,
-                  TYPE_CLASSID(Locale)))
+    if (!parseArg(arg, arg::Q<Locale>(TYPE_CLASSID(Locale), &locales, &len)))
     {
         LocaleIterator it(locales, len);
 
@@ -2578,8 +2578,9 @@ static PyObject *t_localematcher_isMatch(t_localematcher *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "PP", TYPE_CLASSID(Locale), TYPE_CLASSID(Locale),
-                       &desired, &supported))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &desired),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &supported)))
         {
             UBool result;
             STATUS_CALL(result = self->object->isMatch(
@@ -2599,12 +2600,13 @@ static PyObject *t_localematcher_acceptLanguage(PyTypeObject *type,
                                                 PyObject *args)
 {
     charsArg *accepts = NULL, *locales = NULL;
-    int num_locales = 0, num_accepts = 0;
+    size_t num_locales = 0, num_accepts = 0;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "mm",
-                       &accepts, &num_accepts, &locales, &num_locales))
+        if (!parseArgs(args,
+                       arg::m(&accepts, &num_accepts),
+                       arg::m(&locales, &num_locales)))
         {
             const char **accept_buffers =
                 (const char **) calloc(num_accepts, sizeof(char *));
@@ -2620,10 +2622,10 @@ static PyObject *t_localematcher_acceptLanguage(PyTypeObject *type,
                 return PyErr_NoMemory();
             }
 
-            for (int i = 0; i < num_accepts; ++i)
+            for (size_t i = 0; i < num_accepts; ++i)
                 accept_buffers[i] = accepts[i].c_str();
 
-            for (int i = 0; i < num_locales; ++i)
+            for (size_t i = 0; i < num_locales; ++i)
                 locale_buffers[i] = locales[i].c_str();
 
             UErrorCode status = U_ZERO_ERROR;
@@ -2678,11 +2680,13 @@ static PyObject *t_localematcher_acceptLanguageFromHTTP(PyTypeObject *type,
 {
     charsArg header_value;
     charsArg *locales = NULL;
-    int num_locales = 0;
+    size_t num_locales = 0;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "nm", &header_value, &locales, &num_locales))
+        if (!parseArgs(args,
+                       arg::n(&header_value),
+                       arg::m(&locales, &num_locales)))
         {
             const char **locale_buffers =
                 (const char **) calloc(num_locales, sizeof(char *));
@@ -2693,7 +2697,7 @@ static PyObject *t_localematcher_acceptLanguageFromHTTP(PyTypeObject *type,
                 return PyErr_NoMemory();
             }
 
-            for (int i = 0; i < num_locales; ++i)
+            for (size_t i = 0; i < num_locales; ++i)
                 locale_buffers[i] = locales[i].c_str();
 
             UErrorCode status = U_ZERO_ERROR;
@@ -2753,24 +2757,28 @@ static PyObject *t_localedisplaynames_createInstance(PyObject *type, PyObject *a
     UDialectHandling dh;
 #if U_ICU_VERSION_HEX >= VERSION_HEX(51, 0, 0)
     UDisplayContext *dcs;
-    int len;
+    size_t len;
 #endif
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             ldn = LocaleDisplayNames::createInstance(*locale);
             return wrap_LocaleDisplayNames(ldn, T_OWNED);
         }
       case 2:
-        if (!parseArgs(args, "Pi", TYPE_CLASSID(Locale), &locale, &dh))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::Enum<UDialectHandling>(&dh)))
         {
             ldn = LocaleDisplayNames::createInstance(*locale, dh);
             return wrap_LocaleDisplayNames(ldn, T_OWNED);
         }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(51, 0, 0)
-        if (!parseArgs(args, "PH", TYPE_CLASSID(Locale), &locale, &dcs, &len))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::Enums<UDisplayContext>(&dcs, &len)))
         {
             ldn = LocaleDisplayNames::createInstance(*locale, (UDisplayContext *) dcs, len);
             delete[] dcs;
@@ -2797,7 +2805,7 @@ static PyObject *t_localedisplaynames_getContext(t_localedisplaynames *self, PyO
 {
     UDisplayContextType dct;
 
-    if (!parseArg(arg, "i", &dct))
+    if (!parseArg(arg, arg::Enum<UDisplayContextType>(&dct)))
         return PyInt_FromLong(self->object->getContext(dct));
             
     return PyErr_SetArgsError((PyObject *) self, "getContext", arg);
@@ -2811,7 +2819,7 @@ static PyObject *t_localedisplaynames_localeDisplayName(t_localedisplaynames *se
     {
         Locale *locale;
     
-        if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->localeDisplayName(*locale, u);
             return PyUnicode_FromUnicodeString(&u);
@@ -2821,7 +2829,7 @@ static PyObject *t_localedisplaynames_localeDisplayName(t_localedisplaynames *se
     {
         charsArg locale;
 
-        if (!parseArg(arg, "n", &locale))
+        if (!parseArg(arg, arg::n(&locale)))
         {
             self->object->localeDisplayName(locale.c_str(), u);
             return PyUnicode_FromUnicodeString(&u);
@@ -2836,7 +2844,7 @@ static PyObject *t_localedisplaynames_languageDisplayName(t_localedisplaynames *
     UnicodeString u;
     charsArg lang;
 
-    if (!parseArg(arg, "n", &lang))
+    if (!parseArg(arg, arg::n(&lang)))
     {
         self->object->languageDisplayName(lang.c_str(), u);
         return PyUnicode_FromUnicodeString(&u);
@@ -2852,7 +2860,7 @@ static PyObject *t_localedisplaynames_scriptDisplayName(t_localedisplaynames *se
     {
         charsArg script;
 
-        if (!parseArg(arg, "n", &script))
+        if (!parseArg(arg, arg::n(&script)))
         {
             self->object->scriptDisplayName(script.c_str(), u);
             return PyUnicode_FromUnicodeString(&u);
@@ -2862,7 +2870,7 @@ static PyObject *t_localedisplaynames_scriptDisplayName(t_localedisplaynames *se
     {
         UScriptCode script;
 
-        if (!parseArg(arg, "i", &script))
+        if (!parseArg(arg, arg::Enum<UScriptCode>(&script)))
         {
             self->object->scriptDisplayName((UScriptCode) script, u);
             return PyUnicode_FromUnicodeString(&u);
@@ -2877,7 +2885,7 @@ static PyObject *t_localedisplaynames_regionDisplayName(t_localedisplaynames *se
     UnicodeString u;
     charsArg region;
 
-    if (!parseArg(arg, "n", &region))
+    if (!parseArg(arg, arg::n(&region)))
     {
         self->object->regionDisplayName(region.c_str(), u);
         return PyUnicode_FromUnicodeString(&u);
@@ -2891,7 +2899,7 @@ static PyObject *t_localedisplaynames_variantDisplayName(t_localedisplaynames *s
     UnicodeString u;
     charsArg variant;
 
-    if (!parseArg(arg, "n", &variant))
+    if (!parseArg(arg, arg::n(&variant)))
     {
         self->object->variantDisplayName(variant.c_str(), u);
         return PyUnicode_FromUnicodeString(&u);
@@ -2905,7 +2913,7 @@ static PyObject *t_localedisplaynames_keyDisplayName(t_localedisplaynames *self,
     UnicodeString u;
     charsArg key;
 
-    if (!parseArg(arg, "n", &key))
+    if (!parseArg(arg, arg::n(&key)))
     {
         self->object->keyDisplayName(key.c_str(), u);
         return PyUnicode_FromUnicodeString(&u);
@@ -2921,7 +2929,7 @@ static PyObject *t_localedisplaynames_keyValueDisplayName(t_localedisplaynames *
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "nn", &key, &value))
+        if (!parseArgs(args, arg::n(&key), arg::n(&value)))
         {
             self->object->keyValueDisplayName(key.c_str(), value.c_str(), u);
             return PyUnicode_FromUnicodeString(&u);

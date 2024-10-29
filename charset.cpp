@@ -28,6 +28,8 @@
 #include "charset.h"
 #include "macros.h"
 
+#include "arg.h"
+
 
 /* CharsetDetector */
 
@@ -126,7 +128,7 @@ static int t_charsetdetector_init(t_charsetdetector *self,
         break;
 
       case 1:
-        if (!parseArgs(args, "k", &text, &textSize))
+        if (!parseArgs(args, arg::k(&text, &textSize)))
         {
             INT_STATUS_CALL(self->object = ucsdet_open(&status));
             INT_STATUS_CALL(ucsdet_setText(self->object, text, textSize,
@@ -139,7 +141,7 @@ static int t_charsetdetector_init(t_charsetdetector *self,
         return -1;
 
       case 2:
-        if (!parseArgs(args, "kn", &text, &textSize, &encoding))
+        if (!parseArgs(args, arg::k(&text, &textSize), arg::n(&encoding)))
         {
             INT_STATUS_CALL(self->object = ucsdet_open(&status));
             INT_STATUS_CALL(ucsdet_setText(self->object, text,
@@ -170,7 +172,7 @@ static PyObject *t_charsetdetector_setText(t_charsetdetector *self,
     const char *text;
     int size;
 
-    if (!parseArg(arg, "k", &text, &size))
+    if (!parseArg(arg, arg::k(&text, &size)))
     {
         /* ref'd */
         STATUS_CALL(ucsdet_setText(self->object, text, size, &status));
@@ -191,7 +193,7 @@ static PyObject *t_charsetdetector_setDeclaredEncoding(t_charsetdetector *self,
     const char *encoding;
     int size;
 
-    if (!parseArg(arg, "k", &encoding, &size))
+    if (!parseArg(arg, arg::k(&encoding, &size)))
     {
         /* copied */
         STATUS_CALL(ucsdet_setDeclaredEncoding(self->object, encoding, size,
@@ -251,9 +253,9 @@ static PyObject *t_charsetdetector_detectAll(t_charsetdetector *self)
 static PyObject *t_charsetdetector_enableInputFilter(t_charsetdetector *self,
                                                      PyObject *arg)
 {
-    int filter;
+    UBool filter;
 
-    if (!parseArg(arg, "B", &filter))
+    if (!parseArg(arg, arg::B(&filter)))
     {
         UBool previous = ucsdet_enableInputFilter(self->object, filter);
         Py_RETURN_BOOL(previous);

@@ -63,6 +63,16 @@ class TestCharset(TestCase):
 
         self.assertTrue(ustring.encode('iso-8859-1') == bytes)
 
+    def testEnableInputFilter(self):
+
+        detector = CharsetDetector()
+        detector.enableInputFilter(True)
+
+        self.assertTrue(detector.isInputFilterEnabled())
+
+        detector.enableInputFilter(False)
+
+        self.assertFalse(detector.isInputFilterEnabled())
 
 
 if __name__ == "__main__":

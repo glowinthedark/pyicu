@@ -474,8 +474,11 @@ Formattable *toFormattable(PyObject *arg);
 Formattable *toFormattableArray(PyObject *arg, int *len,
                                 classid id, PyTypeObject *type);
 
-UObject **pl2cpa(PyObject *arg, int *len, classid id, PyTypeObject *type);
-PyObject *cpa2pl(UObject **array, int len, PyObject *(*wrap)(UObject *, int));
+UObject **pl2cpa(PyObject *arg, size_t *len, classid id, PyTypeObject *type);
+PyObject *cpa2pl(UObject **array, size_t len, PyObject *(*wrap)(UObject *, int));
+
+int *toIntArray(PyObject *arg, size_t *len);
+charsArg *toCharsArgArray(PyObject *arg, size_t *len);
 
 PyObject *PyErr_SetArgsError(PyObject *self, const char *name, PyObject *args);
 PyObject *PyErr_SetArgsError(PyTypeObject *type, const char *name, PyObject *args);

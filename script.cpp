@@ -31,6 +31,8 @@
 #include "script.h"
 #include "macros.h"
 
+#include "arg.h"
+
 DECLARE_CONSTANTS_TYPE(UScriptCode)
 #if U_ICU_VERSION_HEX >= VERSION_HEX(51, 0, 0)
 DECLARE_CONSTANTS_TYPE(UScriptUsage)
@@ -98,7 +100,7 @@ static int t_script_init(t_script *self, PyObject *args, PyObject *kwds)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &code))
+        if (!parseArgs(args, arg::Enum<UScriptCode>(&code)))
         {
             if (uscript_getName(code) == NULL)
             {
@@ -139,7 +141,7 @@ static PyObject *t_script_getCode(PyTypeObject *type, PyObject *arg)
 {
     charsArg name;
 
-    if (!parseArg(arg, "n", &name))
+    if (!parseArg(arg, arg::n(&name)))
     {
         UScriptCode codes[256];
         int count;
@@ -163,7 +165,7 @@ static PyObject *t_script_getScript(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     int cp;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UScriptCode code;
 
@@ -182,7 +184,7 @@ static PyObject *t_script_getScript(PyTypeObject *type, PyObject *arg)
 
         return PyObject_CallFunction((PyObject *) type, (char *) "i", code);
     }
-    if (!parseArg(arg, "i", &cp))
+    if (!parseArg(arg, arg::i(&cp)))
     {
         UScriptCode code;
 
@@ -203,7 +205,7 @@ static PyObject *t_script_hasScript(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &code))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::Enum<UScriptCode>(&code)))
         {
             if (u->countChar32() != 1)
             {
@@ -222,7 +224,7 @@ static PyObject *t_script_hasScript(PyTypeObject *type, PyObject *args)
 
             Py_RETURN_FALSE;
         }
-        if (!parseArgs(args, "ii", &cp, &code))
+        if (!parseArgs(args, arg::i(&cp), arg::Enum<UScriptCode>(&code)))
         {
             if (uscript_hasScript((UChar32) cp, code))
                 Py_RETURN_TRUE;
@@ -240,7 +242,7 @@ static PyObject *t_script_getScriptExtensions(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     int cp;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         if (u->countChar32() != 1)
         {
@@ -267,7 +269,7 @@ static PyObject *t_script_getScriptExtensions(PyTypeObject *type, PyObject *arg)
 
         return tuple;
     }
-    if (!parseArg(arg, "i", &cp))
+    if (!parseArg(arg, arg::i(&cp)))
     {
         UScriptCode codes[256];
         int count;

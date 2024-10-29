@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2023 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,8 @@
 #include "locale.h"
 #include "iterators.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UBreakIteratorType)
 DECLARE_CONSTANTS_TYPE(UWordBreak)
@@ -434,7 +436,7 @@ static PyObject *t_forwardcharacteriterator_iter(t_forwardcharacteriterator *sel
     Py_RETURN_SELF();
 }
 
-DEFINE_RICHCMP(ForwardCharacterIterator, t_forwardcharacteriterator)
+DEFINE_RICHCMP__ARG__(ForwardCharacterIterator, t_forwardcharacteriterator)
 
 
 /* CharacterIterator */
@@ -514,7 +516,7 @@ static PyObject *t_characteriterator_setIndex(t_characteriterator *self,
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong((long) self->object->setIndex(i));
 
     return PyErr_SetArgsError((PyObject *) self, "setIndex", arg);
@@ -525,7 +527,7 @@ static PyObject *t_characteriterator_setIndex32(t_characteriterator *self,
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong((long) self->object->setIndex32(i));
 
     return PyErr_SetArgsError((PyObject *) self, "setIndex32", arg);
@@ -563,7 +565,7 @@ static PyObject *t_characteriterator_move(t_characteriterator *self,
     int delta;
     CharacterIterator::EOrigin origin;
 
-    if (!parseArgs(args, "ii", &delta, &origin))
+    if (!parseArgs(args, arg::i(&delta), arg::Enum<CharacterIterator::EOrigin>(&origin)))
         return PyInt_FromLong((long) self->object->move(delta, origin));
 
     return PyErr_SetArgsError((PyObject *) self, "move", args);
@@ -580,7 +582,7 @@ static PyObject *t_characteriterator_getText(t_characteriterator *self,
         self->object->getText(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getText(*u);
             Py_RETURN_ARG(args, 0);
@@ -602,7 +604,9 @@ static int t_ucharcharacteriterator_init(t_ucharcharacteriterator *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Wi", &u, &self->text, &len))
+        if (!parseArgs(args,
+                       arg::W(&u, &self->text),
+                       arg::i(&len)))
         {
             self->object = new UCharCharacterIterator(u->getTerminatedBuffer(), len);
             self->flags = T_OWNED;
@@ -611,7 +615,9 @@ static int t_ucharcharacteriterator_init(t_ucharcharacteriterator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 3:
-        if (!parseArgs(args, "Wii", &u, &self->text, &len, &pos))
+        if (!parseArgs(args,
+                       arg::W(&u, &self->text),
+                       arg::i(&len), arg::i(&pos)))
         {
             self->object = new UCharCharacterIterator(u->getTerminatedBuffer(), len, pos);
             self->flags = T_OWNED;
@@ -620,7 +626,9 @@ static int t_ucharcharacteriterator_init(t_ucharcharacteriterator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 5:
-        if (!parseArgs(args, "Wiiii", &u, &self->text, &len, &start, &end, &pos))
+        if (!parseArgs(args,
+                       arg::W(&u, &self->text),
+                       arg::i(&len), arg::i(&start), arg::i(&end), arg::i(&pos)))
         {
             self->object = new UCharCharacterIterator(u->getTerminatedBuffer(), len, start, end, pos);
             self->flags = T_OWNED;
@@ -644,7 +652,7 @@ static PyObject *t_ucharcharacteriterator_setText(t_ucharcharacteriterator *self
     UnicodeString *u;
     int32_t length;
 
-    if (!parseArgs(args, "Wi", &u, &self->text, &length))
+    if (!parseArgs(args, arg::W(&u, &self->text), arg::i(&length)))
     {
         self->object->setText(u->getTerminatedBuffer(), length);  /* ref'd */
         Py_RETURN_NONE;
@@ -664,7 +672,7 @@ static int t_stringcharacteriterator_init(t_stringcharacteriterator *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             self->object = new StringCharacterIterator(*u);
             self->flags = T_OWNED;
@@ -673,7 +681,7 @@ static int t_stringcharacteriterator_init(t_stringcharacteriterator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &pos))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&pos)))
         {
             self->object = new StringCharacterIterator(*u, pos);
             self->flags = T_OWNED;
@@ -682,7 +690,9 @@ static int t_stringcharacteriterator_init(t_stringcharacteriterator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 4:
-        if (!parseArgs(args, "Siii", &u, &_u, &start, &end, &pos))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::i(&start), arg::i(&end), arg::i(&pos)))
         {
             self->object = new StringCharacterIterator(*u, start, end, pos);
             self->flags = T_OWNED;
@@ -705,7 +715,7 @@ static PyObject *t_stringcharacteriterator_setText(t_stringcharacteriterator *se
 {
     UnicodeString *u, _u;
 
-    if (!parseArgs(args, "S", &u, &_u))
+    if (!parseArgs(args, arg::S(&u, &_u)))
     {
         self->object->setText(*u); /* copied */
         Py_RETURN_NONE;
@@ -727,7 +737,7 @@ static PyObject *t_breakiterator_setText(t_breakiterator *self, PyObject *arg)
 {
     UnicodeString *u;
 
-    if (!parseArg(arg, "W", &u, &self->text))
+    if (!parseArg(arg, arg::W(&u, &self->text)))
     {
         self->object->setText(*u); /* ref'd */
         Py_RETURN_NONE;
@@ -754,13 +764,13 @@ static PyObject *t_breakiterator_previous(t_breakiterator *self)
 static PyObject *t_breakiterator_nextBoundary(t_breakiterator *self,
                                               PyObject *args)
 {
-    int32_t n;
+    int n;
 
     switch (PyTuple_Size(args)) {
       case 0:
         return PyInt_FromLong(self->object->next());
       case 1:
-        if (!parseArgs(args, "i", &n))
+        if (!parseArgs(args, arg::i(&n)))
             return PyInt_FromLong(self->object->next(n));
         break;
     }
@@ -776,9 +786,9 @@ static PyObject *t_breakiterator_current(t_breakiterator *self)
 static PyObject *t_breakiterator_following(t_breakiterator *self,
                                            PyObject *arg)
 {
-    int32_t offset;
+    int offset;
 
-    if (!parseArg(arg, "i", &offset))
+    if (!parseArg(arg, arg::i(&offset)))
         return PyInt_FromLong(self->object->following(offset));
 
     return PyErr_SetArgsError((PyObject *) self, "following", arg);
@@ -787,9 +797,9 @@ static PyObject *t_breakiterator_following(t_breakiterator *self,
 static PyObject *t_breakiterator_preceding(t_breakiterator *self,
                                            PyObject *arg)
 {
-    int32_t offset;
+    int offset;
 
-    if (!parseArg(arg, "i", &offset))
+    if (!parseArg(arg, arg::i(&offset)))
         return PyInt_FromLong(self->object->preceding(offset));
 
     return PyErr_SetArgsError((PyObject *) self, "preceding", arg);
@@ -798,9 +808,9 @@ static PyObject *t_breakiterator_preceding(t_breakiterator *self,
 static PyObject *t_breakiterator_isBoundary(t_breakiterator *self,
                                             PyObject *arg)
 {
-    int32_t i;
+    int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         int b = self->object->isBoundary(i);
         Py_RETURN_BOOL(b);
@@ -820,7 +830,7 @@ static PyObject *t_breakiterator_getLocale(t_breakiterator *self,
         STATUS_CALL(locale = self->object->getLocale(ULOC_VALID_LOCALE, status));
         return wrap_Locale(locale);
       case 1:
-        if (!parseArgs(args, "i", &type))
+        if (!parseArgs(args, arg::Enum<ULocDataLocaleType>(&type)))
         {
             STATUS_CALL(locale = self->object->getLocale(type, status));
             return wrap_Locale(locale);
@@ -842,7 +852,7 @@ static PyObject *t_breakiterator_getLocaleID(t_breakiterator *self,
         STATUS_CALL(id = self->object->getLocaleID(ULOC_VALID_LOCALE, status));
         return PyString_FromString(id);
       case 1:
-        if (!parseArgs(args, "i", &type))
+        if (!parseArgs(args, arg::Enum<ULocDataLocaleType>(&type)))
         {
             STATUS_CALL(id = self->object->getLocaleID(type, status));
             return PyString_FromString(id);
@@ -875,7 +885,7 @@ static PyObject *t_breakiterator_createWordInstance(PyTypeObject *type,
     Locale *locale;
     BreakIterator *iterator;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(iterator = BreakIterator::createWordInstance(*locale, status));
         return wrap_BreakIterator(iterator);
@@ -890,7 +900,7 @@ static PyObject *t_breakiterator_createLineInstance(PyTypeObject *type,
     Locale *locale;
     BreakIterator *iterator;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(iterator = BreakIterator::createLineInstance(*locale, status));
         return wrap_BreakIterator(iterator);
@@ -905,7 +915,7 @@ static PyObject *t_breakiterator_createCharacterInstance(PyTypeObject *type,
     Locale *locale;
     BreakIterator *iterator;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(iterator = BreakIterator::createCharacterInstance(*locale, status));
         return wrap_BreakIterator(iterator);
@@ -920,7 +930,7 @@ static PyObject *t_breakiterator_createSentenceInstance(PyTypeObject *type,
     Locale *locale;
     BreakIterator *iterator;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(iterator = BreakIterator::createSentenceInstance(*locale, status));
         return wrap_BreakIterator(iterator);
@@ -935,7 +945,7 @@ static PyObject *t_breakiterator_createTitleInstance(PyTypeObject *type,
     Locale *locale;
     BreakIterator *iterator;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(iterator = BreakIterator::createTitleInstance(*locale, status));
         return wrap_BreakIterator(iterator);
@@ -969,37 +979,33 @@ static PyObject *t_breakiterator_getDisplayName(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "P",
-                       TYPE_CLASSID(Locale),
-                       &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             BreakIterator::getDisplayName(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU",
-                       TYPE_CLASSID(Locale),
-                       &locale, &u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::U(&u)))
         {
             BreakIterator::getDisplayName(*locale, *u);
             Py_RETURN_ARG(args, 1);
         }
-        break;
-        if (!parseArgs(args, "PP",
-                       TYPE_CLASSID(Locale),
-                       TYPE_CLASSID(Locale),
-                       &locale, &display))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &display)))
         {
             BreakIterator::getDisplayName(*locale, *display, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
         break;
       case 3:
-        if (!parseArgs(args, "PPU",
-                       TYPE_CLASSID(Locale),
-                       TYPE_CLASSID(Locale),
-                       &locale, &display, &u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &display),
+                       arg::U(&u)))
         {
             BreakIterator::getDisplayName(*locale, *display, *u);
             Py_RETURN_ARG(args, 2);
@@ -1028,7 +1034,7 @@ static PyObject *t_breakiterator_iter_next(t_breakiterator *self)
     return PyInt_FromLong(n);
 }
 
-DEFINE_RICHCMP(BreakIterator, t_breakiterator)
+DEFINE_RICHCMP__ARG__(BreakIterator, t_breakiterator)
 
 
 /* RuleBasedBreakIterator */
@@ -1047,7 +1053,7 @@ static int t_rulebasedbreakiterator_init(t_rulebasedbreakiterator *self,
         break;
       case 1:
 #if U_ICU_VERSION_HEX >= 0x04080000
-        if (!parseArgs(args, "C", &buffer))
+        if (!parseArgs(args, arg::C(&buffer)))
         {
             UErrorCode status = U_ZERO_ERROR;
             RuleBasedBreakIterator *iterator = new RuleBasedBreakIterator(
@@ -1068,7 +1074,7 @@ static int t_rulebasedbreakiterator_init(t_rulebasedbreakiterator *self,
             }
         }
 #endif
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             RuleBasedBreakIterator *iterator;
 
@@ -1080,7 +1086,7 @@ static int t_rulebasedbreakiterator_init(t_rulebasedbreakiterator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArg(args, "fn", &path, &name))
+        if (!parseArgs(args, arg::f(&path), arg::n(&name)))
         {
             RuleBasedBreakIterator *iterator;
             UDataMemory *data;
@@ -1193,7 +1199,7 @@ static PyObject *t_rulebasedbreakiterator_getRules(t_rulebasedbreakiterator *sel
       case 1:
       {
           UnicodeString *u;
-          if (!parseArgs(args, "U", &u))
+          if (!parseArgs(args, arg::U(&u)))
           {
               u->setTo(self->object->getRules());
               Py_RETURN_ARG(args, 0);
@@ -1251,7 +1257,7 @@ static int t_canonicaliterator_init(t_canonicaliterator *self,
     UnicodeString *u;
     UnicodeString _u;
 
-    if (!parseArgs(args, "S", &u, &_u))
+    if (!parseArgs(args, arg::S(&u, &_u)))
     {
         CanonicalIterator *iterator;
 
@@ -1277,7 +1283,7 @@ static PyObject *t_canonicaliterator_getSource(t_canonicaliterator *self,
         _u = self->object->getSource();
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             u->setTo(self->object->getSource());
             Py_RETURN_ARG(args, 0);
@@ -1293,7 +1299,7 @@ static PyObject *t_canonicaliterator_setSource(t_canonicaliterator *self,
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->setSource(*u, status)); /* transient */
         Py_RETURN_NONE;
@@ -1321,7 +1327,7 @@ static PyObject *t_canonicaliterator_next(t_canonicaliterator *self,
             Py_RETURN_NONE;
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             u->setTo(self->object->next());
             Py_RETURN_ARG(args, 0);
@@ -1378,7 +1384,7 @@ static PyObject *t_collationelementiterator_setText(t_collationelementiterator *
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->setText(*u, status)); /* copied */
         Py_RETURN_NONE;
@@ -1396,7 +1402,7 @@ static PyObject *t_collationelementiterator_setOffset(t_collationelementiterator
 {
     int offset;
 
-    if (!parseArg(arg, "i", &offset))
+    if (!parseArg(arg, arg::i(&offset)))
     {
         STATUS_CALL(self->object->setOffset(offset, status));
         Py_RETURN_NONE;
@@ -1409,7 +1415,7 @@ static PyObject *t_collationelementiterator_getMaxExpansion(t_collationelementit
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong(self->object->getMaxExpansion(i));
 
     return PyErr_SetArgsError((PyObject *) self, "getMaxExpansion", arg);
@@ -1419,7 +1425,7 @@ static PyObject *t_collationelementiterator_strengthOrder(t_collationelementiter
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong(self->object->strengthOrder(i));
 
     return PyErr_SetArgsError((PyObject *) self, "strengthOrder", arg);
@@ -1429,7 +1435,7 @@ static PyObject *t_collationelementiterator_primaryOrder(PyTypeObject *type, PyO
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong(CollationElementIterator::primaryOrder(i));
 
     return PyErr_SetArgsError(type, "primaryOrder", arg);
@@ -1439,7 +1445,7 @@ static PyObject *t_collationelementiterator_secondaryOrder(PyTypeObject *type, P
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong(CollationElementIterator::secondaryOrder(i));
 
     return PyErr_SetArgsError(type, "secondaryOrder", arg);
@@ -1449,7 +1455,7 @@ static PyObject *t_collationelementiterator_tertiaryOrder(PyTypeObject *type, Py
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
         return PyInt_FromLong(CollationElementIterator::tertiaryOrder(i));
 
     return PyErr_SetArgsError(type, "tertiaryOrder", arg);
@@ -1459,7 +1465,7 @@ static PyObject *t_collationelementiterator_isIgnorable(PyTypeObject *type, PyOb
 {
     int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         i = CollationElementIterator::isIgnorable(i);
         Py_RETURN_BOOL(i);
@@ -1489,7 +1495,7 @@ static PyObject *t_collationelementiterator_iter_next(t_collationelementiterator
     return PyInt_FromLong(n);
 }
 
-DEFINE_RICHCMP(CollationElementIterator, t_collationelementiterator)
+DEFINE_RICHCMP__ARG__(CollationElementIterator, t_collationelementiterator)
 
 
 void _init_iterators(PyObject *m)

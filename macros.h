@@ -450,6 +450,37 @@ PyTypeObject name##Type_ = {                                            \
         }                                                                 \
     }
 
+#define DEFINE_RICHCMP__ARG__(name, t_name) \
+    static PyObject *t_name ## _richcmp(t_name *self,                     \
+                                        PyObject *arg, int op)            \
+    {                                                                     \
+        int b = 0;                                                        \
+        name *object;                                                     \
+        if (!parseArg(arg, arg::P<name>(TYPE_CLASSID(name), &object)))    \
+        {                                                                 \
+            switch (op) {                                                 \
+              case Py_EQ:                                                 \
+              case Py_NE:                                                 \
+                b = *self->object == *object;                             \
+                if (op == Py_EQ)                                          \
+                    Py_RETURN_BOOL(b);                                    \
+                Py_RETURN_BOOL(!b);                                       \
+              default:                                                    \
+                PyErr_SetNone(PyExc_NotImplementedError);                 \
+                return NULL;                                              \
+            }                                                             \
+        }                                                                 \
+        switch (op) {                                                     \
+          case Py_EQ:                                                     \
+            Py_RETURN_FALSE;                                              \
+          case Py_NE:                                                     \
+            Py_RETURN_TRUE;                                               \
+          default:                                                        \
+            PyErr_SetNone(PyExc_NotImplementedError);                     \
+            return NULL;                                                  \
+        }                                                                 \
+    }
+
 
 #define DEFINE_ABSTRACT(t_name, name, method)                           \
     static PyObject *t_name##_##method(t_name *self, PyObject *arg)     \
