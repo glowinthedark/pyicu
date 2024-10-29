@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2021 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -32,6 +32,8 @@
 #include "numberformat.h"
 #include "dateformat.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UDateTimePatternConflict)
 DECLARE_CONSTANTS_TYPE(UDateTimePatternField)
@@ -541,14 +543,14 @@ static int t_dateformatsymbols_init(t_dateformatsymbols *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(dfs = new DateFormatSymbols(*locale, status));
             self->object = dfs;
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "n", &type))
+        if (!parseArgs(args, arg::n(&type)))
         {
             INT_STATUS_CALL(dfs = new DateFormatSymbols(type, status));
             self->object = dfs;
@@ -558,8 +560,9 @@ static int t_dateformatsymbols_init(t_dateformatsymbols *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "Pn", TYPE_CLASSID(Locale),
-                       &locale, &type))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::n(&type)))
         {
             INT_STATUS_CALL(dfs = new DateFormatSymbols(*locale, type, status));
             self->object = dfs;
@@ -580,14 +583,14 @@ static int t_dateformatsymbols_init(t_dateformatsymbols *self,
 }
 
 static PyObject *fromUnicodeStringArray(const UnicodeString *strings,
-                                        int len, int dispose)
+                                        size_t len, int dispose)
 {
     PyObject *list = PyList_New(len);
 
     if (list == NULL)
         return NULL;
 
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         UnicodeString *u = (UnicodeString *) (strings + i);
         PyList_SET_ITEM(list, i, PyUnicode_FromUnicodeString(u));
     }
@@ -610,9 +613,9 @@ static PyObject *t_dateformatsymbols_setEras(t_dateformatsymbols *self,
                                              PyObject *arg)
 {
     UnicodeString *eras;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "T", &eras, &len))
+    if (!parseArg(arg, arg::T(&eras, &len)))
     {
         self->object->setEras(eras, len); /* copied */
         delete[] eras; /* dtfmtsym.cpp code duplicates it */
@@ -635,7 +638,9 @@ static PyObject *t_dateformatsymbols_getMonths(t_dateformatsymbols *self,
         months = self->object->getMonths(len);
         return fromUnicodeStringArray(months, len, 0);
       case 2:
-        if (!parseArgs(args, "ii", &context, &width))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormatSymbols::DtContextType>(&context),
+                       arg::Enum<DateFormatSymbols::DtWidthType>(&width)))
         {
             months = self->object->getMonths(len, context, width);
             return fromUnicodeStringArray(months, len, 0);
@@ -650,9 +655,9 @@ static PyObject *t_dateformatsymbols_setMonths(t_dateformatsymbols *self,
                                                PyObject *arg)
 {
     UnicodeString *months;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "T", &months, &len))
+    if (!parseArg(arg, arg::T(&months, &len)))
     {
         self->object->setMonths(months, len); /* copied */
         delete[] months; /* dtfmtsym.cpp code duplicates it */
@@ -674,9 +679,9 @@ static PyObject *t_dateformatsymbols_setShortMonths(t_dateformatsymbols *self,
                                                     PyObject *arg)
 {
     UnicodeString *months;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "T", &months, &len))
+    if (!parseArg(arg, arg::T(&months, &len)))
     {
         self->object->setShortMonths(months, len); /* copied */
         delete[] months; /* dtfmtsym.cpp code duplicates it */
@@ -699,7 +704,9 @@ static PyObject *t_dateformatsymbols_getWeekdays(t_dateformatsymbols *self,
         weekdays = self->object->getWeekdays(len);
         return fromUnicodeStringArray(weekdays, len, 0);
       case 2:
-        if (!parseArgs(args, "ii", &context, &width))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormatSymbols::DtContextType>(&context),
+                       arg::Enum<DateFormatSymbols::DtWidthType>(&width)))
         {
             weekdays = self->object->getWeekdays(len, context, width);
             return fromUnicodeStringArray(weekdays, len, 0);
@@ -714,11 +721,11 @@ static PyObject *t_dateformatsymbols_setWeekdays(t_dateformatsymbols *self,
                                                  PyObject *arg)
 {
     UnicodeString *weekdays;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "T", &weekdays, &len))
+    if (!parseArg(arg, arg::T(&weekdays, &len)))
     {
-        self->object->setWeekdays(weekdays, len); /* copied */
+        self->object->setWeekdays(weekdays, (int32_t) len); /* copied */
         delete[] weekdays; /* dtfmtsym.cpp code duplicates it */
         Py_RETURN_NONE;
     }
@@ -738,11 +745,11 @@ static PyObject *t_dateformatsymbols_setShortWeekdays(t_dateformatsymbols *self,
                                                       PyObject *arg)
 {
     UnicodeString *weekdays;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "T", &weekdays, &len))
+    if (!parseArg(arg, arg::T(&weekdays, &len)))
     {
-        self->object->setShortWeekdays(weekdays, len); /* copied */
+        self->object->setShortWeekdays(weekdays, (int32_t) len); /* copied */
         delete[] weekdays; /* dtfmtsym.cpp code duplicates it */
         Py_RETURN_NONE;
     }
@@ -762,11 +769,11 @@ static PyObject *t_dateformatsymbols_setAmPmStrings(t_dateformatsymbols *self,
                                                     PyObject *arg)
 {
     UnicodeString *strings;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "T", &strings, &len))
+    if (!parseArg(arg, arg::T(&strings, &len)))
     {
-        self->object->setAmPmStrings(strings, len); /* copied */
+        self->object->setAmPmStrings(strings, (int32_t) len); /* copied */
         delete[] strings; /* dtfmtsym.cpp code duplicates it */
         Py_RETURN_NONE;
     }
@@ -774,7 +781,7 @@ static PyObject *t_dateformatsymbols_setAmPmStrings(t_dateformatsymbols *self,
     return PyErr_SetArgsError((PyObject *) self, "setAmPmStrings", arg);
 }
 
-DEFINE_RICHCMP(DateFormatSymbols, t_dateformatsymbols)
+DEFINE_RICHCMP__ARG__(DateFormatSymbols, t_dateformatsymbols)
 
 static PyObject *t_dateformatsymbols_getLocalPatternChars(t_dateformatsymbols *self, PyObject *args)
 {
@@ -786,7 +793,7 @@ static PyObject *t_dateformatsymbols_getLocalPatternChars(t_dateformatsymbols *s
         self->object->getLocalPatternChars(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getLocalPatternChars(*u);
             Py_RETURN_ARG(args, 0);
@@ -801,7 +808,7 @@ static PyObject *t_dateformatsymbols_setLocalPatternChars(t_dateformatsymbols *s
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->setLocalPatternChars(*u); /* copied */
         Py_RETURN_NONE;
@@ -822,7 +829,7 @@ static PyObject *t_dateformatsymbols_getLocale(t_dateformatsymbols *self,
                                                      status));
         return wrap_Locale(locale);
       case 1:
-        if (!parseArgs(args, "i", &type))
+        if (!parseArgs(args, arg::Enum<ULocDataLocaleType>(&type)))
         {
             STATUS_CALL(locale = self->object->getLocale(type, status));
             return wrap_Locale(locale);
@@ -865,7 +872,9 @@ static PyObject *t_dateformatsymbols_getZodiacNames(t_dateformatsymbols *self, P
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &context, &width))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormatSymbols::DtContextType>(&context),
+                       arg::Enum<DateFormatSymbols::DtWidthType>(&width)))
         {
             int count;
             const UnicodeString *names = self->object->getZodiacNames(count, context, width);
@@ -888,9 +897,9 @@ static PyObject *t_dateformat_isLenient(t_dateformat *self)
 
 static PyObject *t_dateformat_setLenient(t_dateformat *self, PyObject *arg)
 {
-    int b;
+    UBool b;
 
-    if (!parseArg(arg, "b", &b))
+    if (!parseArg(arg, arg::b(&b)))
     {
         self->object->setLenient(b);
         Py_RETURN_NONE;
@@ -909,12 +918,12 @@ static PyObject *t_dateformat_format(t_dateformat *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "D", &date))
+        if (!parseArgs(args, arg::D(&date)))
         {
             self->object->format(date, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "P", TYPE_ID(Calendar), &calendar))
+        if (!parseArgs(args, arg::P<Calendar>(TYPE_ID(Calendar), &calendar)))
         {
             FieldPosition fp0(0);
 
@@ -923,35 +932,39 @@ static PyObject *t_dateformat_format(t_dateformat *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "DP", TYPE_CLASSID(FieldPosition),
-                       &date, &fp))
+        if (!parseArgs(args,
+                       arg::D(&date),
+                       arg::P<FieldPosition>(TYPE_CLASSID(FieldPosition), &fp)))
         {
             self->object->format(date, _u, *fp);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "PP",
-                       TYPE_ID(Calendar), TYPE_CLASSID(FieldPosition),
-                       &calendar, &fp))
+        if (!parseArgs(args,
+                       arg::P<Calendar>(TYPE_ID(Calendar), &calendar),
+                       arg::P<FieldPosition>(TYPE_CLASSID(FieldPosition), &fp)))
         {
             self->object->format(*calendar, _u, *fp);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "DU", &date, &u))
+        if (!parseArgs(args, arg::D(&date), arg::U(&u)))
         {
             self->object->format(date, *u);
             Py_RETURN_ARG(args, 1);
         }
         break;
       case 3:
-        if (!parseArgs(args, "DUP", TYPE_CLASSID(FieldPosition),
-                       &date, &u, &fp))
+        if (!parseArgs(args,
+                       arg::D(&date),
+                       arg::U(&u),
+                       arg::P<FieldPosition>(TYPE_CLASSID(FieldPosition), &fp)))
         {
             self->object->format(date, *u, *fp);
             Py_RETURN_ARG(args, 1);
         }
-        if (!parseArgs(args, "PUP",
-                       TYPE_ID(Calendar), TYPE_CLASSID(FieldPosition),
-                       &calendar, &u, &fp))
+        if (!parseArgs(args,
+                       arg::P<Calendar>(TYPE_ID(Calendar), &calendar),
+                       arg::U(&u),
+                       arg::P<FieldPosition>(TYPE_CLASSID(FieldPosition), &fp)))
         {
             self->object->format(*calendar, *u, *fp);
             Py_RETURN_ARG(args, 1);
@@ -972,15 +985,16 @@ static PyObject *t_dateformat_parse(t_dateformat *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             STATUS_CALL(date = self->object->parse(*u, status));
             return PyFloat_FromDouble(date / 1000.0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "SP", TYPE_CLASSID(ParsePosition),
-                       &u, &_u, &pp))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<ParsePosition>(TYPE_CLASSID(ParsePosition), &pp)))
         {
             pp->setErrorIndex(-1);
             STATUS_CALL(date = self->object->parse(*u, *pp));
@@ -990,9 +1004,10 @@ static PyObject *t_dateformat_parse(t_dateformat *self, PyObject *args)
         }
         break;
       case 3:
-        if (!parseArgs(args, "SPP",
-                       TYPE_ID(Calendar), TYPE_CLASSID(ParsePosition),
-                       &u, &_u, &calendar, &pp))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<Calendar>(TYPE_ID(Calendar), &calendar),
+                       arg::P<ParsePosition>(TYPE_CLASSID(ParsePosition), &pp)))
         {
             pp->setErrorIndex(-1);
             STATUS_CALL(self->object->parse(*u, *calendar, *pp));
@@ -1013,7 +1028,7 @@ static PyObject *t_dateformat_setCalendar(t_dateformat *self, PyObject *arg)
 {
     Calendar *calendar;
 
-    if (!parseArg(arg, "P", TYPE_ID(Calendar), &calendar))
+    if (!parseArg(arg, arg::P<Calendar>(TYPE_ID(Calendar), &calendar)))
     {
         self->object->setCalendar(*calendar); /* copied */
         Py_RETURN_NONE;
@@ -1031,7 +1046,7 @@ static PyObject *t_dateformat_setNumberFormat(t_dateformat *self, PyObject *arg)
 {
     NumberFormat *format;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(NumberFormat), &format))
+    if (!parseArg(arg, arg::P<NumberFormat>(TYPE_CLASSID(NumberFormat), &format)))
     {
         self->object->setNumberFormat(*format); /* copied */
         Py_RETURN_NONE;
@@ -1049,7 +1064,7 @@ static PyObject *t_dateformat_setTimeZone(t_dateformat *self, PyObject *arg)
 {
     TimeZone *tz;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(TimeZone), &tz))
+    if (!parseArg(arg, arg::P<TimeZone>(TYPE_CLASSID(TimeZone), &tz)))
     {
         self->object->setTimeZone(*tz); /* copied */
         Py_RETURN_NONE;
@@ -1071,12 +1086,13 @@ static PyObject *t_dateformat_createTimeInstance(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &style))
+        if (!parseArgs(args, arg::Enum<DateFormat::EStyle>(&style)))
             return wrap_DateFormat(DateFormat::createTimeInstance(style));
         break;
       case 2:
-        if (!parseArgs(args, "iP", TYPE_CLASSID(Locale),
-                       &style, &locale))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormat::EStyle>(&style),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
             return wrap_DateFormat(DateFormat::createTimeInstance(style, *locale));
         break;
     }
@@ -1092,12 +1108,13 @@ static PyObject *t_dateformat_createDateInstance(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &style))
+        if (!parseArgs(args, arg::Enum<DateFormat::EStyle>(&style)))
             return wrap_DateFormat(DateFormat::createDateInstance(style));
         break;
       case 2:
-        if (!parseArgs(args, "iP", TYPE_CLASSID(Locale),
-                       &style, &locale))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormat::EStyle>(&style),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
             return wrap_DateFormat(DateFormat::createDateInstance(style, *locale));
         break;
     }
@@ -1113,16 +1130,20 @@ static PyObject *t_dateformat_createDateTimeInstance(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &dateStyle))
+        if (!parseArgs(args, arg::Enum<DateFormat::EStyle>(&dateStyle)))
             return wrap_DateFormat(DateFormat::createDateTimeInstance(dateStyle));
         break;
       case 2:
-        if (!parseArgs(args, "ii", &dateStyle, &timeStyle))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormat::EStyle>(&dateStyle),
+                       arg::Enum<DateFormat::EStyle>(&timeStyle)))
             return wrap_DateFormat(DateFormat::createDateTimeInstance(dateStyle, timeStyle));
         break;
       case 3:
-        if (!parseArgs(args, "iiP", TYPE_CLASSID(Locale),
-                       &dateStyle, &timeStyle, &locale))
+        if (!parseArgs(args,
+                       arg::Enum<DateFormat::EStyle>(&dateStyle),
+                       arg::Enum<DateFormat::EStyle>(&timeStyle),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
             return wrap_DateFormat(DateFormat::createDateTimeInstance(dateStyle, timeStyle, *locale));
         break;
     }
@@ -1150,12 +1171,11 @@ static PyObject *t_dateformat_getAvailableLocales(PyTypeObject *type)
 
 static PyObject *t_dateformat_setContext(t_dateformat *self, PyObject *arg)
 {
-    int context;
+    UDisplayContext context;
 
-    if (!parseArg(arg, "i", &context))
+    if (!parseArg(arg, arg::Enum<UDisplayContext>(&context)))
     {
-        STATUS_CALL(self->object->setContext(
-                        (UDisplayContext) context, status));
+        STATUS_CALL(self->object->setContext(context, status));
         Py_RETURN_NONE;
     }
 
@@ -1164,13 +1184,12 @@ static PyObject *t_dateformat_setContext(t_dateformat *self, PyObject *arg)
 
 static PyObject *t_dateformat_getContext(t_dateformat *self, PyObject *arg)
 {
-    int context, type;
+    UDisplayContext context;
+    UDisplayContextType type;
 
-    if (!parseArg(arg, "i", &type))
+    if (!parseArg(arg, arg::Enum<UDisplayContextType>(&type)))
     {
-        STATUS_CALL(context = self->object->getContext(
-                        (UDisplayContextType) type, status));
-
+        STATUS_CALL(context = self->object->getContext(type, status));
         return PyInt_FromLong(context);
     }
 
@@ -1180,13 +1199,15 @@ static PyObject *t_dateformat_getContext(t_dateformat *self, PyObject *arg)
 static PyObject *t_dateformat_setBooleanAttribute(t_dateformat *self,
                                                   PyObject *args)
 {
-    int attribute, value;
+    UDateFormatBooleanAttribute attribute;
+    UBool value;
 
-    if (!parseArgs(args, "ii", &attribute, &value))
+    if (!parseArgs(args,
+                   arg::Enum<UDateFormatBooleanAttribute>(&attribute),
+                   arg::b(&value)))
     {
         STATUS_CALL(self->object->setBooleanAttribute(
-                        (UDateFormatBooleanAttribute) attribute,
-                        (UBool) value, status));
+                        attribute, value, status));
         Py_RETURN_SELF();
     }
 
@@ -1196,15 +1217,14 @@ static PyObject *t_dateformat_setBooleanAttribute(t_dateformat *self,
 static PyObject *t_dateformat_getBooleanAttribute(t_dateformat *self,
                                                   PyObject *arg)
 {
-    int attribute;
+    UDateFormatBooleanAttribute attribute;
 
-    if (!parseArg(arg, "i", &attribute))
+    if (!parseArg(arg, arg::Enum<UDateFormatBooleanAttribute>(&attribute)))
     {
         UBool result;
 
         STATUS_CALL(result = self->object->getBooleanAttribute(
-                        (UDateFormatBooleanAttribute) attribute,
-                        status));
+                        attribute, status));
         Py_RETURN_BOOL(result);
     }
 
@@ -1231,7 +1251,7 @@ static int t_simpledateformat_init(t_simpledateformat *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             INT_STATUS_CALL(format = new SimpleDateFormat(*u, status));
             self->object = format;
@@ -1241,16 +1261,18 @@ static int t_simpledateformat_init(t_simpledateformat *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "SP", TYPE_CLASSID(Locale),
-                       &u, &_u, &locale))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(format = new SimpleDateFormat(*u, *locale, status));
             self->object = format;
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "SP", TYPE_CLASSID(DateFormatSymbols),
-                       &u, &_u, &dfs))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<DateFormatSymbols>(TYPE_CLASSID(DateFormatSymbols), &dfs)))
         {
             INT_STATUS_CALL(format = new SimpleDateFormat(*u, *dfs, status));
             self->object = format;
@@ -1281,7 +1303,7 @@ static PyObject *t_simpledateformat_toPattern(t_simpledateformat *self,
         self->object->toPattern(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->toPattern(*u);
             Py_RETURN_ARG(args, 0);
@@ -1303,7 +1325,7 @@ static PyObject *t_simpledateformat_toLocalizedPattern(t_simpledateformat *self,
         STATUS_CALL(self->object->toLocalizedPattern(_u, status));
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             STATUS_CALL(self->object->toLocalizedPattern(*u, status));
             Py_RETURN_ARG(args, 0);
@@ -1320,7 +1342,7 @@ static PyObject *t_simpledateformat_applyPattern(t_simpledateformat *self,
     UnicodeString *u;
     UnicodeString _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->applyPattern(*u);
         Py_RETURN_NONE;
@@ -1334,7 +1356,7 @@ static PyObject *t_simpledateformat_applyLocalizedPattern(t_simpledateformat *se
     UnicodeString *u;
     UnicodeString _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->applyLocalizedPattern(*u, status));
         Py_RETURN_NONE;
@@ -1356,7 +1378,7 @@ static PyObject *t_simpledateformat_set2DigitYearStart(t_simpledateformat *self,
 {
     UDate date;
 
-    if (!parseArg(arg, "D", &date))
+    if (!parseArg(arg, arg::D(&date)))
     {
         STATUS_CALL(self->object->set2DigitYearStart(date, status));
         Py_RETURN_NONE;
@@ -1374,7 +1396,7 @@ static PyObject *t_simpledateformat_setDateFormatSymbols(t_simpledateformat *sel
 {
     DateFormatSymbols *dfs;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(DateFormatSymbols), &dfs))
+    if (!parseArg(arg, arg::P<DateFormatSymbols>(TYPE_CLASSID(DateFormatSymbols), &dfs)))
     {
         self->object->setDateFormatSymbols(*dfs); /* copied */
         Py_RETURN_NONE;
@@ -1415,7 +1437,7 @@ static PyObject *t_datetimepatterngenerator_createInstance(PyTypeObject *type,
         STATUS_CALL(dtpg = DateTimePatternGenerator::createInstance(status));
         break;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             STATUS_CALL(dtpg = DateTimePatternGenerator::createInstance(
                             *locale, status));
@@ -1436,7 +1458,7 @@ static PyObject *t_datetimepatterngenerator_staticGetSkeleton(
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UnicodeString result;
 
@@ -1453,7 +1475,7 @@ static PyObject *t_datetimepatterngenerator_staticGetBaseSkeleton(
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UnicodeString result;
 
@@ -1472,7 +1494,7 @@ static PyObject *t_datetimepatterngenerator_getSkeleton(
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UnicodeString result;
 
@@ -1488,7 +1510,7 @@ static PyObject *t_datetimepatterngenerator_getBaseSkeleton(
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UnicodeString result;
 
@@ -1503,9 +1525,9 @@ static PyObject *t_datetimepatterngenerator_addPattern(
     t_datetimepatterngenerator *self, PyObject *args)
 {
     UnicodeString *u, _u;
-    int override;
+    UBool override;
 
-    if (!parseArgs(args, "Sb", &u, &_u, &override))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::b(&override)))
     {
         UDateTimePatternConflict conflict;
         UnicodeString conflictPattern;
@@ -1528,12 +1550,12 @@ static PyObject *t_datetimepatterngenerator_getBestPattern(
 {
     UnicodeString *u, _u;
 #if U_ICU_VERSION_HEX >= 0x04040000
-    int options;
+    UDateTimePatternMatchOptions options;
 #endif
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             UnicodeString result;
 
@@ -1543,13 +1565,14 @@ static PyObject *t_datetimepatterngenerator_getBestPattern(
         break;
 #if U_ICU_VERSION_HEX >= 0x04040000
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &options))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UDateTimePatternMatchOptions>(&options)))
         {
             UnicodeString result;
 
             STATUS_CALL(result = self->object->getBestPattern(
-                            *u, (UDateTimePatternMatchOptions) options,
-                            status));
+                            *u, options, status));
             return PyUnicode_FromUnicodeString(&result);
         }
         break;
@@ -1563,11 +1586,13 @@ static PyObject *t_datetimepatterngenerator_setAppendItemFormat(
     t_datetimepatterngenerator *self, PyObject *args)
 {
     UnicodeString *u, _u;
-    int field;
+    UDateTimePatternField field;
 
-    if (!parseArgs(args, "iS", &field, &u, &_u))
+    if (!parseArgs(args,
+                   arg::Enum<UDateTimePatternField>(&field),
+                   arg::S(&u, &_u)))
     {
-        self->object->setAppendItemFormat((UDateTimePatternField) field, *u);
+        self->object->setAppendItemFormat(field, *u);
         Py_RETURN_NONE;
     }
 
@@ -1578,11 +1603,13 @@ static PyObject *t_datetimepatterngenerator_setAppendItemName(
     t_datetimepatterngenerator *self, PyObject *args)
 {
     UnicodeString *u, _u;
-    int field;
+    UDateTimePatternField field;
 
-    if (!parseArgs(args, "iS", &field, &u, &_u))
+    if (!parseArgs(args,
+                   arg::Enum<UDateTimePatternField>(&field),
+                   arg::S(&u, &_u)))
     {
-        self->object->setAppendItemName((UDateTimePatternField) field, *u);
+        self->object->setAppendItemName(field, *u);
         Py_RETURN_NONE;
     }
 
@@ -1592,13 +1619,11 @@ static PyObject *t_datetimepatterngenerator_setAppendItemName(
 static PyObject *t_datetimepatterngenerator_getAppendItemFormat(
     t_datetimepatterngenerator *self, PyObject *arg)
 {
-    int field;
+    UDateTimePatternField field;
 
-    if (!parseArg(arg, "i", &field))
+    if (!parseArg(arg, arg::Enum<UDateTimePatternField>(&field)))
     {
-        const UnicodeString &result = self->object->getAppendItemFormat(
-            (UDateTimePatternField) field);
-
+        const UnicodeString &result = self->object->getAppendItemFormat(field);
         return PyUnicode_FromUnicodeString(&result);
     }
 
@@ -1608,13 +1633,11 @@ static PyObject *t_datetimepatterngenerator_getAppendItemFormat(
 static PyObject *t_datetimepatterngenerator_getAppendItemName(
     t_datetimepatterngenerator *self, PyObject *arg)
 {
-    int field;
+    UDateTimePatternField field;
 
-    if (!parseArg(arg, "i", &field))
+    if (!parseArg(arg, arg::Enum<UDateTimePatternField>(&field)))
     {
-        const UnicodeString &result = self->object->getAppendItemName(
-            (UDateTimePatternField) field);
-
+        const UnicodeString &result = self->object->getAppendItemName(field);
         return PyUnicode_FromUnicodeString(&result);
     }
 
@@ -1626,12 +1649,12 @@ static PyObject *t_datetimepatterngenerator_replaceFieldTypes(
 {
     UnicodeString *u, _u, *v, _v;;
 #if U_ICU_VERSION_HEX >= 0x04040000
-    int options;
+    UDateTimePatternMatchOptions options;
 #endif
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SS", &u, &_u, &v, &_v))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v)))
         {
             UnicodeString result;
 
@@ -1642,13 +1665,15 @@ static PyObject *t_datetimepatterngenerator_replaceFieldTypes(
         break;
 #if U_ICU_VERSION_HEX >= 0x04040000
       case 3:
-        if (!parseArgs(args, "SSi", &u, &_u, &v, &_v, &options))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::S(&v, &_v),
+                       arg::Enum<UDateTimePatternMatchOptions>(&options)))
         {
             UnicodeString result;
 
             STATUS_CALL(result = self->object->replaceFieldTypes(
-                            *u, *v, (UDateTimePatternMatchOptions) options,
-                            status));
+                            *u, *v, options, status));
             return PyUnicode_FromUnicodeString(&result);
         }
         break;
@@ -1690,7 +1715,7 @@ static PyObject *t_datetimepatterngenerator_getPatternForSkeleton(
 {
     UnicodeString *u, _u;;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UnicodeString result;
 
@@ -1706,7 +1731,7 @@ static PyObject *t_datetimepatterngenerator_setDecimal(
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->setDecimal(*u);
         Py_RETURN_NONE;
@@ -1732,7 +1757,7 @@ static PyObject *t_datetimepatterngenerator_getDateTimeFormat(
       case 1: {
         UDateFormatStyle dfs;
 
-        if (!parseArgs(args, "i", &dfs))
+        if (!parseArgs(args, arg::Enum<UDateFormatStyle>(&dfs)))
         {
             STATUS_RESULT_CALL(
                 const UnicodeString &u = self->object->getDateTimeFormat(dfs, status),
@@ -1751,7 +1776,7 @@ static PyObject *t_datetimepatterngenerator_setDateTimeFormat(
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->setDateTimeFormat(*u);
         Py_RETURN_NONE;
@@ -1770,7 +1795,7 @@ static int t_dateinterval_init(t_dateinterval *self,
 {
     UDate fromDate, toDate;
 
-    if (!parseArgs(args, "DD", &fromDate, &toDate))
+    if (!parseArgs(args, arg::D(&fromDate), arg::D(&toDate)))
     {
         self->object = new DateInterval(fromDate, toDate);
         self->flags = T_OWNED;
@@ -1807,7 +1832,7 @@ static PyObject *t_dateinterval_str(t_dateinterval *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(DateInterval, t_dateinterval)
+DEFINE_RICHCMP__ARG__(DateInterval, t_dateinterval)
 
 
 /* DateIntervalInfo */
@@ -1825,7 +1850,7 @@ static int t_dateintervalinfo_init(t_dateintervalinfo *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(dii = new DateIntervalInfo(*locale, status));
             self->object = dii;
@@ -1858,7 +1883,10 @@ static PyObject *t_dateintervalinfo_setIntervalPattern(t_dateintervalinfo *self,
     UnicodeString *u1, _u1;
     UCalendarDateFields ucdf;
 
-    if (!parseArgs(args, "SiS", &u0, &_u0, &ucdf, &u1, &_u1))
+    if (!parseArgs(args,
+                   arg::S(&u0, &_u0),
+                   arg::Enum<UCalendarDateFields>(&ucdf),
+                   arg::S(&u1, &_u1)))
     {
         /* u0 transient, u1 copied */
         STATUS_CALL(self->object->setIntervalPattern(*u0, ucdf, *u1, status));
@@ -1877,7 +1905,9 @@ static PyObject *t_dateintervalinfo_getIntervalPattern(t_dateintervalinfo *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u0, &_u0, &ucdf))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::Enum<UCalendarDateFields>(&ucdf)))
         {
             STATUS_CALL(self->object->getIntervalPattern(*u0, ucdf, _u1,
                                                          status));
@@ -1885,7 +1915,10 @@ static PyObject *t_dateintervalinfo_getIntervalPattern(t_dateintervalinfo *self,
         }
         break;
       case 3:
-        if (!parseArgs(args, "SiU", &u0, &_u0, &ucdf, &u1))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::Enum<UCalendarDateFields>(&ucdf),
+                       arg::U(&u1)))
         {
             STATUS_CALL(self->object->getIntervalPattern(*u0, ucdf, *u1,
                                                          status));
@@ -1901,7 +1934,7 @@ static PyObject *t_dateintervalinfo_setFallbackIntervalPattern(t_dateintervalinf
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         /* copied */
         STATUS_CALL(self->object->setFallbackIntervalPattern(*u, status));
@@ -1920,7 +1953,7 @@ static PyObject *t_dateintervalinfo_getFallbackIntervalPattern(t_dateintervalinf
         self->object->getFallbackIntervalPattern(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getFallbackIntervalPattern(*u);
             Py_RETURN_ARG(args, 0);
@@ -1931,7 +1964,7 @@ static PyObject *t_dateintervalinfo_getFallbackIntervalPattern(t_dateintervalinf
     return PyErr_SetArgsError((PyObject *) self, "getFallbackIntervalPattern", args);
 }
 
-DEFINE_RICHCMP(DateIntervalInfo, t_dateintervalinfo)
+DEFINE_RICHCMP__ARG__(DateIntervalInfo, t_dateintervalinfo)
 
 
 /* DateIntervalFormat */
@@ -1945,30 +1978,33 @@ static PyObject *t_dateintervalformat_format(t_dateintervalformat *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(DateInterval), &di))
+        if (!parseArgs(args, arg::P<DateInterval>(TYPE_CLASSID(DateInterval), &di)))
         {
             STATUS_CALL(self->object->format(di, _u, _fp, status));
             return PyUnicode_FromUnicodeString(&_u);
         }
         break;
       case 2:
-        if (!parseArgs(args, "PU", TYPE_CLASSID(DateInterval), &di, &u))
+        if (!parseArgs(args,
+                       arg::P<DateInterval>(TYPE_CLASSID(DateInterval), &di),
+                       arg::U(&u)))
         {
             STATUS_CALL(self->object->format(di, *u, _fp, status));
             Py_RETURN_ARG(args, 1);
         }
-        if (!parseArgs(args, "PP",
-                       TYPE_CLASSID(DateInterval), TYPE_CLASSID(FieldPosition),
-                       &di, &fp))
+        if (!parseArgs(args,
+                       arg::P<DateInterval>(TYPE_CLASSID(DateInterval), &di),
+                       arg::P<FieldPosition>(TYPE_CLASSID(FieldPosition), &fp)))
         {
             STATUS_CALL(self->object->format(di, _u, *fp, status));
             return PyUnicode_FromUnicodeString(&_u);
         }
         break;
       case 3:
-        if (!parseArgs(args, "PUP",
-                       TYPE_CLASSID(DateInterval), TYPE_CLASSID(FieldPosition),
-                       &di, &u, &fp))
+        if (!parseArgs(args,
+                       arg::P<DateInterval>(TYPE_CLASSID(DateInterval), &di),
+                       arg::U(&u),
+                       arg::P<FieldPosition>(TYPE_CLASSID(FieldPosition), &fp)))
         {
             STATUS_CALL(self->object->format(di, *u, *fp, status));
             Py_RETURN_ARG(args, 1);
@@ -1989,7 +2025,7 @@ static PyObject *t_dateintervalformat_setDateIntervalInfo(t_dateintervalformat *
 {
     DateIntervalInfo *dii;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(DateIntervalInfo), &dii))
+    if (!parseArg(arg, arg::P<DateIntervalInfo>(TYPE_CLASSID(DateIntervalInfo), &dii)))
     {
         /* copied */
         STATUS_CALL(self->object->setDateIntervalInfo(*dii, status));
@@ -2023,22 +2059,24 @@ static PyObject *t_dateintervalformat_createInstance(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             STATUS_CALL(dif = DateIntervalFormat::createInstance(*u, status));
             return wrap_DateIntervalFormat(dif, T_OWNED);
         }
         break;
       case 2:
-        if (!parseArgs(args, "SP", TYPE_CLASSID(Locale),
-                       &u, &_u, &locale))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             STATUS_CALL(dif = DateIntervalFormat::createInstance(*u, *locale,
                                                                  status));
             return wrap_DateIntervalFormat(dif, T_OWNED);
         }
-        if (!parseArgs(args, "SP", TYPE_CLASSID(DateIntervalInfo),
-                       &u, &_u, &dii))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<DateIntervalInfo>(TYPE_CLASSID(DateIntervalInfo), &dii)))
         {
             STATUS_CALL(dif = DateIntervalFormat::createInstance(*u, *dii,
                                                                  status));
@@ -2046,9 +2084,10 @@ static PyObject *t_dateintervalformat_createInstance(PyTypeObject *type,
         }
         break;
       case 3:
-        if (!parseArgs(args, "SPP",
-                       TYPE_CLASSID(Locale), TYPE_CLASSID(DateIntervalInfo),
-                       &u, &_u, &locale, &dii))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),                       
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<DateIntervalInfo>(TYPE_CLASSID(DateIntervalInfo), &dii)))
         {
             STATUS_CALL(dif = DateIntervalFormat::createInstance(*u, *locale,
                                                                  *dii, status));
@@ -2060,7 +2099,7 @@ static PyObject *t_dateintervalformat_createInstance(PyTypeObject *type,
     return PyErr_SetArgsError(type, "createInstance", args);
 }
 
-DEFINE_RICHCMP(DateIntervalFormat, t_dateintervalformat)
+DEFINE_RICHCMP__ARG__(DateIntervalFormat, t_dateintervalformat)
 
 #endif  // ICU >= 4.0
 
@@ -2074,7 +2113,7 @@ static PyObject *t_dateintervalformat_formatToValue(t_dateintervalformat *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(DateInterval), &interval))
+        if (!parseArgs(args, arg::P<DateInterval>(TYPE_CLASSID(DateInterval), &interval)))
         {
             FormattedDateInterval fdi;
 
@@ -2083,9 +2122,9 @@ static PyObject *t_dateintervalformat_formatToValue(t_dateintervalformat *self,
         }
         break;
       case 2:
-        if (!parseArgs(args, "PP",
-                       TYPE_CLASSID(Calendar), TYPE_CLASSID(Calendar),
-                       &from, &to))
+        if (!parseArgs(args,
+                       arg::P<Calendar>(TYPE_CLASSID(Calendar), &from),
+                       arg::P<Calendar>(TYPE_CLASSID(Calendar), &to)))
         {
             FormattedDateInterval fdi;
 
@@ -2105,12 +2144,11 @@ static PyObject *t_dateintervalformat_formatToValue(t_dateintervalformat *self,
 static PyObject *t_dateintervalformat_setContext(t_dateintervalformat *self,
                                                  PyObject *arg)
 {
-    int context;
+    UDisplayContext context;
 
-    if (!parseArg(arg, "i", &context))
+    if (!parseArg(arg, arg::Enum<UDisplayContext>(&context)))
     {
-        STATUS_CALL(self->object->setContext(
-                        (UDisplayContext) context, status));
+        STATUS_CALL(self->object->setContext(context, status));
         Py_RETURN_NONE;
     }
 
@@ -2120,13 +2158,12 @@ static PyObject *t_dateintervalformat_setContext(t_dateintervalformat *self,
 static PyObject *t_dateintervalformat_getContext(t_dateintervalformat *self,
                                                  PyObject *arg)
 {
-    int context, type;
+    UDisplayContext context;
+    UDisplayContextType type;
 
-    if (!parseArg(arg, "i", &type))
+    if (!parseArg(arg, arg::Enum<UDisplayContextType>(&type)))
     {
-        STATUS_CALL(context = self->object->getContext(
-                        (UDisplayContextType) type, status));
-
+        STATUS_CALL(context = self->object->getContext(type, status));
         return PyInt_FromLong(context);
     }
 
@@ -2157,7 +2194,7 @@ static int t_relativedatetimeformatter_init(t_relativedatetimeformatter *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(fmt = new RelativeDateTimeFormatter(*locale, status));
             self->object = fmt;
@@ -2167,8 +2204,9 @@ static int t_relativedatetimeformatter_init(t_relativedatetimeformatter *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "PP", TYPE_CLASSID(Locale),
-                       TYPE_CLASSID(NumberFormat), &locale, &number_format))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<NumberFormat>(TYPE_CLASSID(NumberFormat), &number_format)))
         {
             INT_STATUS_CALL(fmt = new RelativeDateTimeFormatter(
                 *locale, (NumberFormat *) number_format->clone(), status));
@@ -2180,9 +2218,11 @@ static int t_relativedatetimeformatter_init(t_relativedatetimeformatter *self,
         return -1;
 #if U_ICU_VERSION_HEX >= VERSION_HEX(54, 0, 0)
       case 4:
-        if (!parseArgs(args, "PPii", TYPE_CLASSID(Locale),
-                       TYPE_CLASSID(NumberFormat), &locale, &number_format,
-                       &style, &context))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<NumberFormat>(TYPE_CLASSID(NumberFormat), &number_format),
+                       arg::Enum<UDateRelativeDateTimeFormatterStyle>(&style),
+                       arg::Enum<UDisplayContext>(&context)))
         {
             INT_STATUS_CALL(fmt = new RelativeDateTimeFormatter(
                 *locale, (NumberFormat *) number_format->clone(),
@@ -2222,7 +2262,7 @@ static PyObject *t_relativedatetimeformatter_format(
         return PyUnicode_FromUnicodeString(&result);
       }
       case 1:
-        if (!parseArgs(args, "d", &value))
+        if (!parseArgs(args, arg::d(&value)))
         {
             UnicodeString result;
 
@@ -2232,7 +2272,9 @@ static PyObject *t_relativedatetimeformatter_format(
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &direction, &abs_unit))
+        if (!parseArgs(args,
+                       arg::Enum<UDateDirection>(&direction),
+                       arg::Enum<UDateAbsoluteUnit>(&abs_unit)))
         {
             UnicodeString result;
 
@@ -2242,13 +2284,19 @@ static PyObject *t_relativedatetimeformatter_format(
         }
         break;
       case 3:
-        if (!parseArgs(args, "iiU", &direction, &abs_unit, &buffer))
+        if (!parseArgs(args,
+                       arg::Enum<UDateDirection>(&direction),
+                       arg::Enum<UDateAbsoluteUnit>(&abs_unit),
+                       arg::U(&buffer)))
         {
             STATUS_CALL(self->object->format(
                 direction, abs_unit, *buffer, status));
             Py_RETURN_ARG(args, 2);
         }
-        if (!parseArgs(args, "dii", &value, &direction, &rel_unit))
+        if (!parseArgs(args,
+                       arg::d(&value),
+                       arg::Enum<UDateDirection>(&direction),
+                       arg::Enum<UDateRelativeUnit>(&rel_unit)))
         {
             UnicodeString result;
 
@@ -2258,7 +2306,11 @@ static PyObject *t_relativedatetimeformatter_format(
         }
         break;
       case 4:
-        if (!parseArgs(args, "diiU", &value, &direction, &rel_unit, &buffer))
+        if (!parseArgs(args,
+                       arg::d(&value),
+                       arg::Enum<UDateDirection>(&direction),
+                       arg::Enum<UDateRelativeUnit>(&rel_unit),
+                       arg::U(&buffer)))
         {
             STATUS_CALL(self->object->format(
                 value, direction, rel_unit, *buffer, status));
@@ -2281,7 +2333,9 @@ static PyObject *t_relativedatetimeformatter_formatNumeric(
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "di", &offset, &unit))
+        if (!parseArgs(args,
+                       arg::d(&offset),
+                       arg::Enum<URelativeDateTimeUnit>(&unit)))
         {
             UnicodeString result;
 
@@ -2291,7 +2345,10 @@ static PyObject *t_relativedatetimeformatter_formatNumeric(
         }
         break;
       case 3:
-        if (!parseArgs(args, "diU", &offset, &unit, &buffer))
+        if (!parseArgs(args,
+                       arg::d(&offset),
+                       arg::Enum<URelativeDateTimeUnit>(&unit),
+                       arg::U(&buffer)))
         {
             STATUS_CALL(self->object->formatNumeric(
                 offset, unit, *buffer, status));
@@ -2324,7 +2381,7 @@ static PyObject *t_relativedatetimeformatter_formatToValue(
         return wrap_FormattedRelativeDateTime(value);
       }
       case 1:
-        if (!parseArgs(args, "d", &d))
+        if (!parseArgs(args, arg::d(&d)))
         {
             FormattedRelativeDateTime value;
 
@@ -2334,7 +2391,9 @@ static PyObject *t_relativedatetimeformatter_formatToValue(
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &direction, &abs_unit))
+        if (!parseArgs(args,
+                       arg::Enum<UDateDirection>(&direction),
+                       arg::Enum<UDateAbsoluteUnit>(&abs_unit)))
         {
             FormattedRelativeDateTime value;
 
@@ -2344,7 +2403,10 @@ static PyObject *t_relativedatetimeformatter_formatToValue(
         }
         break;
       case 3:
-        if (!parseArgs(args, "dii", &d, &direction, &rel_unit))
+        if (!parseArgs(args,
+                       arg::d(&d),
+                       arg::Enum<UDateDirection>(&direction),
+                       arg::Enum<UDateRelativeUnit>(&rel_unit)))
         {
             FormattedRelativeDateTime value;
 
@@ -2366,7 +2428,9 @@ static PyObject *t_relativedatetimeformatter_formatNumericToValue(
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "di", &offset, &unit))
+        if (!parseArgs(args,
+                       arg::d(&offset),
+                       arg::Enum<URelativeDateTimeUnit>(&unit)))
         {
             FormattedRelativeDateTime value;
 
@@ -2390,7 +2454,7 @@ static PyObject *t_relativedatetimeformatter_combineDateAndTime(
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SS", &u, &_u, &v, &_v))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v)))
         {
             UnicodeString result;
 
@@ -2400,7 +2464,10 @@ static PyObject *t_relativedatetimeformatter_combineDateAndTime(
         }
         break;
       case 3:
-        if (!parseArgs(args, "SSU", &u, &_u, &v, &_v, &buffer))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::S(&v, &_v),
+                       arg::U(&buffer)))
         {
             STATUS_CALL(self->object->combineDateAndTime(
                 *u, *v, *buffer, status));

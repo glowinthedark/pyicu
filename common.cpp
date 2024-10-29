@@ -760,17 +760,17 @@ Formattable *toFormattableArray(PyObject *arg, int *len,
     return NULL;
 }
 
-static UnicodeString *toUnicodeStringArray(PyObject *arg, int *len)
+UnicodeString *toUnicodeStringArray(PyObject *arg, size_t *len)
 {
     if (PySequence_Check(arg))
     {
-        *len = (int) PySequence_Size(arg);
+        *len = PySequence_Size(arg);
         UnicodeString *array = new UnicodeString[*len + 1];
 
         if (!array)
           return (UnicodeString *) PyErr_NoMemory();
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
             if (PyObject_TypeCheck(obj, &UObjectType_))
@@ -802,7 +802,7 @@ charsArg *toCharsArgArray(PyObject *arg, size_t *len)
 {
     if (PySequence_Check(arg))
     {
-        *len = (int) PySequence_Size(arg);
+        *len = PySequence_Size(arg);
         charsArg *array = new charsArg[*len + 1];
 
         if (!array)
@@ -1402,9 +1402,11 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
           {
               UnicodeString **array = va_arg(list, UnicodeString **);
               int *len = va_arg(list, int *);
-              *array = toUnicodeStringArray(arg, len);
+              size_t size;
+              *array = toUnicodeStringArray(arg, &size);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 

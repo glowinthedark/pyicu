@@ -513,6 +513,37 @@ public:
     }
 };
 
+class UnicodeStringArray {
+private:
+    UnicodeString **const array;
+    size_t *const len;
+
+public:
+    UnicodeStringArray() = delete;
+
+    explicit UnicodeStringArray(UnicodeString **param1, size_t *param2) noexcept
+        : array(param1), len(param2) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (PySequence_Check(arg))
+        {
+            if (PySequence_Length(arg) > 0)
+            {
+                PyObject *obj = PySequence_GetItem(arg, 0);
+                int ok = (PyBytes_Check(obj) || PyUnicode_Check(obj) ||
+                          isUnicodeString(obj));
+                Py_DECREF(obj);
+                if (!ok)
+                    return -1;
+            }
+        }
+
+        *array = toUnicodeStringArray(arg, len);
+        return 0;
+    }
+};
+
 class UnicodeStringAndPythonObject {
 private:
     UnicodeString **const u;
@@ -614,6 +645,7 @@ _IS_POD(String);
 _IS_POD(ICUObject<UObject>);
 _IS_POD(ICUObjectArray<UObject>);
 _IS_POD(UnicodeStringArg);
+_IS_POD(UnicodeStringArray);
 _IS_POD(UnicodeStringAndPythonObject);
 
 #undef _IS_POD
@@ -639,6 +671,7 @@ using O = PythonObject;
 using S = String;
 template <typename T> using P = ICUObject<T>;
 template <typename T> using Q = ICUObjectArray<T>;
+using T = UnicodeStringArray;
 using U = UnicodeStringArg;
 using V = UnicodeStringAndPythonObject;
 using W = SavedString;
