@@ -177,6 +177,27 @@ template <typename T> IntArray Enums(T **param, size_t *len) {
     return IntArray((int **) param, len);
 }
 
+class Date {
+private:
+    UDate *const d;
+
+public:
+    Date() = delete;
+
+    explicit Date(UDate *param) noexcept : d(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (isDate(arg))
+        {
+            *d = PyObject_AsUDate(arg);
+            return 0;
+        }
+
+        return -1;
+    }
+};
+
 class BytesToCStringAndSize {
 private:
     const char **const data;
@@ -501,6 +522,7 @@ public:
 
 _IS_POD(BooleanStrict);
 _IS_POD(Boolean);
+_IS_POD(Date);
 _IS_POD(Double);
 _IS_POD(Int);
 _IS_POD(IntArray);
@@ -524,6 +546,7 @@ _IS_POD(UnicodeStringAndPythonObject);
 using B = BooleanStrict;
 using b = Boolean;
 using C = PythonBytes;
+using D = Date;
 using d = Double;
 using f = StringOrUnicodeToFSCharsArg;
 using H = IntArray;

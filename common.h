@@ -463,6 +463,7 @@ int _parseArgs(PyObject **args, int count, const char *types, ...);
 
 #endif
 
+int isDate(PyObject *object);
 int isUnicodeString(PyObject *arg);
 int32_t toUChar32(UnicodeString& u, UChar32 *c, UErrorCode& status);
 UnicodeString fromUChar32(UChar32 c);
