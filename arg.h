@@ -534,6 +534,22 @@ public:
     }
 };
 
+class AnyPythonObject {
+private:
+    PyObject **const obj;
+
+public:
+    AnyPythonObject() = delete;
+
+    explicit AnyPythonObject(PyObject **param) noexcept : obj(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        *obj = arg;
+        return 0;
+    }
+};
+
 class PythonObject {
 private:
     PyTypeObject *const type;
@@ -577,6 +593,7 @@ public:
   static_assert(std::is_trivial<T>::value);             \
   static_assert(std::is_standard_layout<T>::value)
 
+_IS_POD(AnyPythonObject);
 _IS_POD(BooleanStrict);
 _IS_POD(Boolean);
 _IS_POD(CString);
@@ -612,6 +629,7 @@ using d = Double;
 using f = StringOrUnicodeToFSCharsArg;
 using H = IntArray;
 using i = Int;
+using K = AnyPythonObject;
 using k = BytesToCStringAndSize;
 using M = PythonCallable;
 using m = StringOrUnicodeToUtf8CharsArgArray;

@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2018 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,8 @@
 #include "iterators.h"
 #include "unicodeset.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UCollationResult)
 DECLARE_CONSTANTS_TYPE(UCollAttribute)
@@ -405,7 +407,7 @@ static PyObject *t_collationkey_compareTo(t_collationkey *self, PyObject *arg)
 {
     CollationKey *key;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(CollationKey), &key))
+    if (!parseArg(arg, arg::P<CollationKey>(TYPE_CLASSID(CollationKey), &key)))
     {
         UCollationResult result;
         STATUS_CALL(result = self->object->compareTo(*key, status));
@@ -423,7 +425,7 @@ static PyObject *t_collationkey_getByteArray(t_collationkey *self)
     return PyBytes_FromStringAndSize((char *) array, count);
 }
 
-DEFINE_RICHCMP(CollationKey, t_collationkey)
+DEFINE_RICHCMP__ARG__(CollationKey, t_collationkey)
 
 
 /* Collator */
@@ -437,14 +439,14 @@ static PyObject *t_collator_compare(t_collator *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SS", &u, &_u, &v, &_v))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v)))
         {
             STATUS_CALL(result = self->object->compare(*u, *v, status));
             return PyInt_FromLong(result);
         }
         break;
       case 3:
-        if (!parseArgs(args, "SSi", &u, &_u, &v, &_v, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v), arg::i(&len)))
         {
             STATUS_CALL(result = self->object->compare(*u, *v, len, status));
             return PyInt_FromLong(result);
@@ -461,7 +463,7 @@ static PyObject *t_collator_greater(t_collator *self, PyObject *args)
     UnicodeString *u, *v;
     UnicodeString _u, _v;
 
-    if (!parseArgs(args, "SS", &u, &_u, &v, &_v))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v)))
     {
         b = self->object->greater(*u, *v);
         Py_RETURN_BOOL(b);
@@ -476,7 +478,7 @@ static PyObject *t_collator_greaterOrEqual(t_collator *self, PyObject *args)
     UnicodeString *u, *v;
     UnicodeString _u, _v;
 
-    if (!parseArgs(args, "SS", &u, &_u, &v, &_v))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v)))
     {
         b = self->object->greaterOrEqual(*u, *v);
         Py_RETURN_BOOL(b);
@@ -491,7 +493,7 @@ static PyObject *t_collator_equals(t_collator *self, PyObject *args)
     UnicodeString *u, *v;
     UnicodeString _u, _v;
 
-    if (!parseArgs(args, "SS", &u, &_u, &v, &_v))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::S(&v, &_v)))
     {
         b = self->object->equals(*u, *v);
         Py_RETURN_BOOL(b);
@@ -509,15 +511,16 @@ static PyObject *t_collator_getCollationKey(t_collator *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             STATUS_CALL(self->object->getCollationKey(*u, _key, status));
             return wrap_CollationKey(new CollationKey(_key), T_OWNED);
         }
         break;
       case 2:
-        if (!parseArgs(args, "SP", TYPE_CLASSID(CollationKey),
-                       &u, &_u, &key))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<CollationKey>(TYPE_CLASSID(CollationKey), &key)))
         {
             STATUS_CALL(self->object->getCollationKey(*u, *key, status));
             Py_RETURN_ARG(args, 1);
@@ -532,13 +535,13 @@ static PyObject *t_collator_getSortKey(t_collator *self, PyObject *args)
 {
     UnicodeString *u;
     UnicodeString _u;
-    uint32_t len, size;
+    int len, size;
     uint8_t *buf;
     PyObject *key;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             len = u->length() * 4 + 8;
             buf = (uint8_t *) malloc(len);
@@ -563,7 +566,7 @@ static PyObject *t_collator_getSortKey(t_collator *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&len)))
         {
             buf = (uint8_t *) calloc(len, 1);
             if (buf == NULL)
@@ -590,7 +593,7 @@ static PyObject *t_collator_setStrength(t_collator *self, PyObject *arg)
 {
     Collator::ECollationStrength strength;
 
-    if (!parseArg(arg, "i", &strength))
+    if (!parseArg(arg, arg::Enum<Collator::ECollationStrength>(&strength)))
     {
         self->object->setStrength(strength);
         Py_RETURN_NONE;
@@ -610,7 +613,7 @@ static PyObject *t_collator_getLocale(t_collator *self, PyObject *args)
                                                      status));
         return wrap_Locale(locale);
       case 1:
-        if (!parseArgs(args, "i", &type))
+        if (!parseArgs(args, arg::Enum<ULocDataLocaleType>(&type)))
         {
             STATUS_CALL(locale = self->object->getLocale(type, status));
             return wrap_Locale(locale);
@@ -637,7 +640,7 @@ static PyObject *t_collator_createInstance(PyTypeObject *type, PyObject *args)
         STATUS_CALL(collator = Collator::createInstance(status));
         return wrap_Collator(collator);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             STATUS_CALL(collator = Collator::createInstance(*locale, status));
             return wrap_Collator(collator);
@@ -661,7 +664,7 @@ static PyObject *t_collator_getKeywordValues(PyTypeObject *type, PyObject *arg)
     StringEnumeration *e;
     charsArg keyword;
 
-    if (!parseArg(arg, "n", &keyword))
+    if (!parseArg(arg, arg::n(&keyword)))
     {
         STATUS_CALL(e = Collator::getKeywordValues(keyword, status));
         return wrap_StringEnumeration(e, T_OWNED);
@@ -681,8 +684,9 @@ static PyObject *t_collator_getKeywordValuesForLocale(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "nP", TYPE_CLASSID(Locale),
-                       &keyword, &locale))
+        if (!parseArgs(args,
+                       arg::n(&keyword),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             STATUS_CALL(e = Collator::getKeywordValuesForLocale(
                 keyword, *locale, false, status));
@@ -690,8 +694,10 @@ static PyObject *t_collator_getKeywordValuesForLocale(PyTypeObject *type,
         }
         break;
       case 3:
-        if (!parseArgs(args, "nPb", TYPE_CLASSID(Locale),
-                       &keyword, &locale, &commonlyUsed))
+        if (!parseArgs(args,
+                       arg::n(&keyword),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::b(&commonlyUsed)))
         {
             STATUS_CALL(e = Collator::getKeywordValuesForLocale(
                 keyword, *locale, commonlyUsed, status));
@@ -727,20 +733,24 @@ static PyObject *t_collator_getFunctionalEquivalent(PyTypeObject *type,
     Locale *locale;
     charsArg keyword;
 
-    if (!parseArgs(args, "nP", TYPE_CLASSID(Locale),
-                   &keyword, &locale))
-    {
-        Locale result(*locale);
-        STATUS_CALL(Collator::getFunctionalEquivalent(keyword, result,
-                                                      isAvailable, status));
+    switch (PyTuple_Size(args)) {
+      case 2:
+        if (!parseArgs(args,
+                       arg::n(&keyword),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
+        {
+            Locale result(*locale);
+            STATUS_CALL(Collator::getFunctionalEquivalent(keyword, result,
+                                                          isAvailable, status));
 
-        PyObject *py_locale = wrap_Locale(result);
-        PyObject *py_result = Py_BuildValue("(OO)", py_locale,
-                                            isAvailable ? Py_True : Py_False);
+            PyObject *py_locale = wrap_Locale(result);
+            PyObject *py_result = Py_BuildValue("(OO)", py_locale,
+                                                isAvailable ? Py_True : Py_False);
 
-        Py_DECREF(py_locale);
+            Py_DECREF(py_locale);
 
-        return py_result;
+            return py_result;
+        }
     }
 
     return PyErr_SetArgsError(type, "getFunctionalEquivalent", args);
@@ -750,7 +760,7 @@ static PyObject *t_collator_getAttribute(t_collator *self, PyObject *arg)
 {
     UColAttribute attribute;
 
-    if (!parseArg(arg, "i", &attribute))
+    if (!parseArg(arg, arg::Enum<UColAttribute>(&attribute)))
     {
         UColAttributeValue value;
         STATUS_CALL(value = self->object->getAttribute(attribute, status));
@@ -766,7 +776,9 @@ static PyObject *t_collator_setAttribute(t_collator *self, PyObject *args)
     UColAttribute attribute;
     UColAttributeValue value;
 
-    if (!parseArgs(args, "ii", &attribute, &value))
+    if (!parseArgs(args,
+                   arg::Enum<UColAttribute>(&attribute),
+                   arg::Enum<UColAttributeValue>(&value)))
     {
         STATUS_CALL(self->object->setAttribute(attribute, value, status));
         Py_RETURN_NONE;
@@ -794,14 +806,14 @@ static PyObject *t_collator_getVariableTop(t_collator *self)
 static PyObject *t_collator_setVariableTop(t_collator *self, PyObject *arg)
 {
     UnicodeString *u, _u;
-    uint32_t top;
+    int top;
 
-    if (!parseArg(arg, "i", &top))
+    if (!parseArg(arg, arg::i(&top)))
     {
         STATUS_CALL(self->object->setVariableTop(top << 16, status));
         Py_RETURN_NONE;
     }
-    else if (!parseArg(arg, "S", &u, &_u))
+    else if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->setVariableTop(*u, status)); /* transient */
         Py_RETURN_NONE;
@@ -831,7 +843,7 @@ static int t_rulebasedcollator_init(t_rulebasedcollator *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             INT_STATUS_CALL(collator = new RuleBasedCollator(*u, status));
             self->object = collator;
@@ -841,7 +853,9 @@ static int t_rulebasedcollator_init(t_rulebasedcollator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "CO", &RuleBasedCollatorType_, &buf, &base))
+        if (!parseArgs(args,
+                       arg::C(&buf),
+                       arg::O(&RuleBasedCollatorType_, &base)))
         {
           INT_STATUS_CALL(collator = new RuleBasedCollator((uint8_t *) PyBytes_AS_STRING(buf), (int32_t) PyBytes_GET_SIZE(buf), ((t_rulebasedcollator *) base)->object, status));
             self->object = collator;
@@ -853,7 +867,10 @@ static int t_rulebasedcollator_init(t_rulebasedcollator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &strength, &decompositionMode))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<Collator::ECollationStrength>(&strength),
+                       arg::Enum<UColAttributeValue>(&decompositionMode)))
         {
             INT_STATUS_CALL(collator = new RuleBasedCollator(*u, strength, decompositionMode, status));
             self->object = collator;
@@ -886,12 +903,12 @@ static PyObject *t_rulebasedcollator_createCollationElementIterator(t_rulebasedc
     CharacterIterator *chars;
     CollationElementIterator *iterator;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         iterator = self->object->createCollationElementIterator(*u);
         return wrap_CollationElementIterator(iterator, T_OWNED);
     }
-    else if (!parseArg(arg, "P", TYPE_ID(CharacterIterator), &chars))
+    else if (!parseArg(arg, arg::P<CharacterIterator>(TYPE_ID(CharacterIterator), &chars)))
     {
         iterator = self->object->createCollationElementIterator(*chars);
         return wrap_CollationElementIterator(iterator, T_OWNED);
@@ -922,7 +939,7 @@ static PyObject *t_rulebasedcollator_str(t_rulebasedcollator *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(RuleBasedCollator, t_rulebasedcollator)
+DEFINE_RICHCMP__ARG__(RuleBasedCollator, t_rulebasedcollator)
 
 
 #if U_ICU_VERSION_HEX >= 0x04080000
@@ -937,7 +954,7 @@ static int t_alphabeticindex_init(t_alphabeticindex *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(self->object = new AlphabeticIndex(
                 *locale, status));
@@ -945,7 +962,7 @@ static int t_alphabeticindex_init(t_alphabeticindex *self,
             break;
         }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(51, 0, 0)
-        if (!parseArgs(args, "P", TYPE_CLASSID(RuleBasedCollator), &collator))
+        if (!parseArgs(args, arg::P<RuleBasedCollator>(TYPE_CLASSID(RuleBasedCollator), &collator)))
         {
             INT_STATUS_CALL(self->object = new AlphabeticIndex(
                 new RuleBasedCollator(*collator), status));
@@ -974,12 +991,12 @@ static PyObject *t_alphabeticindex_addLabels(t_alphabeticindex *self,
     UnicodeSet *set;
     Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         STATUS_CALL(self->object->addLabels(*set, status));
         Py_RETURN_SELF();
     }
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(self->object->addLabels(*locale, status));
         Py_RETURN_SELF();
@@ -994,7 +1011,7 @@ static PyObject *t_alphabeticindex_addRecord(t_alphabeticindex *self,
     UnicodeString *u, _u;
     PyObject *record;
 
-    if (!parseArgs(args, "SK", &u, &_u, &record))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::K(&record)))
     {
         STATUS_CALL(self->object->addRecord(*u, record, status));
         PyList_Append(self->records, record);
@@ -1018,7 +1035,7 @@ static PyObject *t_alphabeticindex_getBucketIndex(t_alphabeticindex *self,
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         int index;
 
@@ -1085,7 +1102,7 @@ static int t_alphabeticindex__setInflowLabel(
 
     UnicodeString *u, _u;
 
-    if (!parseArg(value, "S", &u, &_u))
+    if (!parseArg(value, arg::S(&u, &_u)))
     {
         INT_STATUS_CALL(self->object->setInflowLabel(*u, status));
         return 0;
@@ -1112,7 +1129,7 @@ static int t_alphabeticindex__setOverflowLabel(
 
     UnicodeString *u, _u;
 
-    if (!parseArg(value, "S", &u, &_u))
+    if (!parseArg(value, arg::S(&u, &_u)))
     {
         INT_STATUS_CALL(self->object->setOverflowLabel(*u, status));
         return 0;
@@ -1139,7 +1156,7 @@ static int t_alphabeticindex__setUnderflowLabel(
 
     UnicodeString *u, _u;
 
-    if (!parseArg(value, "S", &u, &_u))
+    if (!parseArg(value, arg::S(&u, &_u)))
     {
         INT_STATUS_CALL(self->object->setUnderflowLabel(*u, status));
         return 0;
@@ -1166,7 +1183,7 @@ static int t_alphabeticindex__setMaxLabelCount(
 
     int count;
 
-    if (!parseArg(value, "i", &count))
+    if (!parseArg(value, arg::i(&count)))
     {
         INT_STATUS_CALL(self->object->setMaxLabelCount(count, status));
         return 0;
@@ -1286,7 +1303,7 @@ static PyObject *t_immutableindex_getBucketIndex(t_immutableindex *self,
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         int index;
 
@@ -1303,7 +1320,7 @@ static PyObject *t_immutableindex_getBucket(t_immutableindex *self,
 {
     int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         const AlphabeticIndex::Bucket *bucket = self->object->getBucket(index);
 
@@ -1364,7 +1381,7 @@ static int t_immutableindex_contains(t_immutableindex *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UErrorCode status = U_ZERO_ERROR;
         self->object->getBucketIndex(*u, status);
