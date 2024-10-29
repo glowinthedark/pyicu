@@ -473,6 +473,27 @@ public:
     }
 };
 
+class CString {
+private:
+    char **const c;
+
+public:
+    CString() = delete;
+
+    explicit CString(char **param) noexcept
+        : c(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (PyBytes_Check(arg))
+        {
+            *c = PyBytes_AS_STRING(arg);
+            return 0;
+        }
+        return -1;
+    }
+};
+
 class UnicodeStringArg {
 private:
     UnicodeString **const u;
@@ -533,12 +554,32 @@ public:
     }
 };
 
+class PythonCallable {
+private:
+    PyObject **const obj;
+
+public:
+    PythonCallable() = delete;
+
+    explicit PythonCallable(PyObject **param) noexcept : obj(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!PyCallable_Check(arg))
+            return -1;
+        
+        *obj = arg;
+        return 0;
+    }
+};
+
 #define _IS_POD(T)                                      \
   static_assert(std::is_trivial<T>::value);             \
   static_assert(std::is_standard_layout<T>::value)
 
 _IS_POD(BooleanStrict);
 _IS_POD(Boolean);
+_IS_POD(CString);
 _IS_POD(Date);
 _IS_POD(Double);
 _IS_POD(Int);
@@ -546,6 +587,7 @@ _IS_POD(IntArray);
 _IS_POD(BytesToCStringAndSize);
 _IS_POD(None);
 _IS_POD(PythonBytes);
+_IS_POD(PythonCallable);
 _IS_POD(PythonObject);
 _IS_POD(SavedString);
 _IS_POD(StringOrUnicodeToFSCharsArg);
@@ -564,12 +606,14 @@ _IS_POD(UnicodeStringAndPythonObject);
 using B = BooleanStrict;
 using b = Boolean;
 using C = PythonBytes;
+using c = CString;
 using D = Date;
 using d = Double;
 using f = StringOrUnicodeToFSCharsArg;
 using H = IntArray;
 using i = Int;
 using k = BytesToCStringAndSize;
+using M = PythonCallable;
 using m = StringOrUnicodeToUtf8CharsArgArray;
 using N = None;
 using n = StringOrUnicodeToUtf8CharsArg;

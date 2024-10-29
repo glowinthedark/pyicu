@@ -29,8 +29,10 @@
 
 #include "bases.h"
 #include "char.h"
-#include "macros.h"
 #include "unicodeset.h"
+#include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UProperty)
 DECLARE_CONSTANTS_TYPE(UCharDirection)
@@ -268,9 +270,13 @@ static PyObject *t_char_hasBinaryProperty(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &c, &prop))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&c),
+                       arg::Enum<UProperty>(&prop)))
             Py_RETURN_BOOL(u_hasBinaryProperty(c, prop));
-        if (!parseArgs(args, "Si", &u, &_u, &prop) && u->length() >= 1)
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UProperty>(&prop)) && u->length() >= 1)
             Py_RETURN_BOOL(u_hasBinaryProperty(u->char32At(0), prop));
         break;
     }
@@ -284,7 +290,7 @@ static PyObject *t_char_getBinaryPropertySet(PyTypeObject *type, PyObject *arg)
 {
     UProperty prop;
 
-    if (!parseArg(arg, "i", &prop))
+    if (!parseArg(arg, arg::Enum<UProperty>(&prop)))
     {
         const USet *set;
         STATUS_CALL(set = u_getBinaryPropertySet(prop, &status));
@@ -300,7 +306,7 @@ static PyObject *t_char_getIntPropertyMap(PyTypeObject *type, PyObject *arg)
 {
     UProperty prop;
 
-    if (!parseArg(arg, "i", &prop))
+    if (!parseArg(arg, arg::Enum<UProperty>(&prop)))
     {
         const UCPMap *map;
         STATUS_CALL(map = u_getIntPropertyMap(prop, &status));
@@ -321,9 +327,13 @@ static PyObject *t_char_getIntPropertyValue(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &c, &prop))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&c),
+                       arg::Enum<UProperty>(&prop)))
             return PyInt_FromLong(u_getIntPropertyValue(c, prop));
-        if (!parseArgs(args, "Si", &u, &_u, &prop) && u->length() >= 1)
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UProperty>(&prop)) && u->length() >= 1)
             return PyInt_FromLong(u_getIntPropertyValue(u->char32At(0), prop));
         break;
     }
@@ -336,7 +346,7 @@ static PyObject *t_char_getIntPropertyMinValue(PyTypeObject *type,
 {
     UProperty prop;
 
-    if (!parseArg(arg, "i", &prop))
+    if (!parseArg(arg, arg::Enum<UProperty>(&prop)))
         return PyInt_FromLong(u_getIntPropertyMinValue(prop));
 
     return PyErr_SetArgsError((PyObject *) type, "getIntPropertyMinValue", arg);
@@ -347,7 +357,7 @@ static PyObject *t_char_getIntPropertyMaxValue(PyTypeObject *type,
 {
     UProperty prop;
 
-    if (!parseArg(arg, "i", &prop))
+    if (!parseArg(arg, arg::Enum<UProperty>(&prop)))
         return PyInt_FromLong(u_getIntPropertyMaxValue(prop));
 
     return PyErr_SetArgsError((PyObject *) type, "getIntPropertyMaxValue", arg);
@@ -359,9 +369,9 @@ static PyObject *t_char_getNumericValue(PyTypeObject *type, PyObject *arg)
     UChar32 c;
     double value = U_NO_NUMERIC_VALUE;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         value = u_getNumericValue(c);
-    else if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    else if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         value = u_getNumericValue(u->char32At(0));
     else
         return PyErr_SetArgsError((PyObject *) type, "getNumericValue", arg);
@@ -378,9 +388,9 @@ static PyObject *t_char_fn(bool_char_fn fn, const char *name,
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         Py_RETURN_BOOL((*fn)(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         Py_RETURN_BOOL((*fn)(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) type, name, arg);
@@ -503,9 +513,9 @@ static PyObject *t_char_charDirection(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         return PyInt_FromLong(u_charDirection(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         return PyInt_FromLong(u_charDirection(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) type, "charDirection", arg);
@@ -516,9 +526,9 @@ static PyObject *t_char_charType(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         return PyInt_FromLong((int) u_charType(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         return PyInt_FromLong((int) u_charType(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) type, "charType", arg);
@@ -560,9 +570,9 @@ static PyObject *t_char_getCombiningClass(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         return PyInt_FromLong((unsigned int) u_getCombiningClass(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         return PyInt_FromLong(
             (unsigned int) u_getCombiningClass(u->char32At(0)));
 
@@ -574,9 +584,9 @@ static PyObject *t_char_charDigitValue(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         return PyInt_FromLong((int) u_charDigitValue(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         return PyInt_FromLong((int) u_charDigitValue(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) type, "charDigitValue", arg);
@@ -587,9 +597,9 @@ static PyObject *t_char_ublock_getCode(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         return PyInt_FromLong((int) ublock_getCode(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         return PyInt_FromLong((int) ublock_getCode(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) type, "ublock_getCode", arg);
@@ -605,13 +615,13 @@ static PyObject *t_char_charName(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &c))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c)))
         {
             STATUS_CALL(size = u_charName(c, choice, buffer,
                                           sizeof(buffer), &status));
             return PyString_FromString(buffer);
         }
-        if (!parseArgs(args, "S", &u, &_u) && u->length() >= 1)
+        if (!parseArgs(args, arg::S(&u, &_u)) && u->length() >= 1)
         {
             STATUS_CALL(size = u_charName(u->char32At(0), choice,
                                           buffer, sizeof(buffer), &status));
@@ -619,13 +629,17 @@ static PyObject *t_char_charName(PyTypeObject *type, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &c, &choice))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&c),
+                       arg::Enum<UCharNameChoice>(&choice)))
         {
             STATUS_CALL(size = u_charName(c, choice,
                                           buffer, sizeof(buffer), &status));
             return PyString_FromStringAndSize(buffer, size);
         }
-        if (!parseArgs(args, "Si", &u, &_u, &choice) && u->length() >= 1)
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UCharNameChoice>(&choice)) && u->length() >= 1)
         {
             STATUS_CALL(size = u_charName(u->char32At(0), choice,
                                           buffer, sizeof(buffer), &status));
@@ -645,14 +659,16 @@ static PyObject *t_char_charFromName(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "c", &name))
+        if (!parseArgs(args, arg::c(&name)))
         {
             STATUS_CALL(c = u_charFromName(choice, name, &status));
             return PyInt_FromLong(c);
         }
         break;
       case 2:
-        if (!parseArgs(args, "ci", &name, &choice))
+        if (!parseArgs(args,
+                       arg::c(&name),
+                       arg::Enum<UCharNameChoice>(&choice)))
         {
             STATUS_CALL(c = u_charFromName(choice, name, &status));
             return PyInt_FromLong(c);
@@ -690,7 +706,10 @@ static PyObject *t_char_enumCharNames(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "iiM", &start, &limit, &callable))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&start),
+                       arg::Enum<UChar32>(&limit),
+                       arg::M(&callable)))
         {
             STATUS_CALL(u_enumCharNames(
                 start, limit, t_char_enum_names_cb, callable, choice, &status));
@@ -698,7 +717,10 @@ static PyObject *t_char_enumCharNames(PyTypeObject *type, PyObject *args)
                 return NULL;
             Py_RETURN_NONE;
         }
-        if (!parseArgs(args, "SSM", &u, &_u, &v, &_v, &callable) &&
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::S(&v, &_v),
+                       arg::M(&callable)) &&
             u->length() >= 1 && v->length() >= 1)
         {
             STATUS_CALL(u_enumCharNames(
@@ -710,7 +732,11 @@ static PyObject *t_char_enumCharNames(PyTypeObject *type, PyObject *args)
         }
         break;
       case 4:
-        if (!parseArgs(args, "iiMi", &start, &limit, &callable, &choice))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&start),
+                       arg::Enum<UChar32>(&limit),
+                       arg::M(&callable),
+                       arg::Enum<UCharNameChoice>(&choice)))
         {
             STATUS_CALL(u_enumCharNames(
                 start, limit, t_char_enum_names_cb, callable, choice, &status));
@@ -718,7 +744,11 @@ static PyObject *t_char_enumCharNames(PyTypeObject *type, PyObject *args)
                 return NULL;
             Py_RETURN_NONE;
         }
-        if (!parseArgs(args, "SSMi", &u, &_u, &v, &_v, &callable, &choice) &&
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::S(&v, &_v),
+                       arg::M(&callable),
+                       arg::Enum<UCharNameChoice>(&choice)) &&
             u->length() >= 1 && v->length() >= 1)
         {
             STATUS_CALL(u_enumCharNames(
@@ -742,7 +772,7 @@ static PyObject *t_char_getPropertyName(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &prop))
+        if (!parseArgs(args, arg::Enum<UProperty>(&prop)))
         {
             result = u_getPropertyName(prop, choice);
             if (result != NULL)
@@ -751,7 +781,9 @@ static PyObject *t_char_getPropertyName(PyTypeObject *type, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &prop, &choice))
+        if (!parseArgs(args,
+                       arg::Enum<UProperty>(&prop),
+                       arg::Enum<UPropertyNameChoice>(&choice)))
         {
             result = u_getPropertyName(prop, choice);
             if (result != NULL)
@@ -768,7 +800,7 @@ static PyObject *t_char_getPropertyEnum(PyTypeObject *type, PyObject *arg)
 {
     charsArg alias;
 
-    if (!parseArg(arg, "n", &alias))
+    if (!parseArg(arg, arg::n(&alias)))
         return PyInt_FromLong(u_getPropertyEnum(alias));
 
     return PyErr_SetArgsError((PyObject *) type, "getPropertyEnum", arg);
@@ -777,13 +809,15 @@ static PyObject *t_char_getPropertyEnum(PyTypeObject *type, PyObject *arg)
 static PyObject *t_char_getPropertyValueName(PyTypeObject *type, PyObject *args)
 {
     UPropertyNameChoice choice = U_SHORT_PROPERTY_NAME;
-    int32_t value;
+    int value;
     UProperty prop;
     const char *result;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &prop, &value))
+        if (!parseArgs(args,
+                       arg::Enum<UProperty>(&prop),
+                       arg::i(&value)))
         {
             result = u_getPropertyValueName(prop, value, choice);
             if (result != NULL)
@@ -792,7 +826,10 @@ static PyObject *t_char_getPropertyValueName(PyTypeObject *type, PyObject *args)
         }
         break;
       case 3:
-        if (!parseArgs(args, "iii", &prop, &value, &choice))
+        if (!parseArgs(args,
+                       arg::Enum<UProperty>(&prop),
+                       arg::i(&value),
+                       arg::Enum<UPropertyNameChoice>(&choice)))
         {
             result = u_getPropertyValueName(prop, value, choice);
             if (result != NULL)
@@ -812,7 +849,7 @@ static PyObject *t_char_getPropertyValueEnum(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "in", &prop, &alias))
+        if (!parseArgs(args, arg::Enum<UProperty>(&prop), arg::n(&alias)))
             return PyInt_FromLong(u_getPropertyValueEnum(prop, alias));
         break;
     }
@@ -826,9 +863,9 @@ static PyObject *t_char_fn(uchar32_char_fn fn, const char *name,
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
       return PyInt_FromLong((*fn)(c));
-    if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
     {
         UnicodeString result;
         result += (*fn)(u->char32At(0));
@@ -870,13 +907,13 @@ static PyObject *t_char_foldCase(PyTypeObject *type, PyObject *args)
 {
     UnicodeString *u, _u;
     UChar32 c;
-    uint32_t options;
+    int options;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &c))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c)))
             return PyInt_FromLong(u_foldCase(c, U_FOLD_CASE_DEFAULT));
-        if (!parseArgs(args, "S", &u, &_u) && u->length() >= 1)
+        if (!parseArgs(args, arg::S(&u, &_u)) && u->length() >= 1)
         {
             UnicodeString result;
             result += u_foldCase(u->char32At(0), U_FOLD_CASE_DEFAULT);
@@ -885,9 +922,9 @@ static PyObject *t_char_foldCase(PyTypeObject *type, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &c, &options))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c), arg::i(&options)))
             return PyInt_FromLong(u_foldCase(c, options));
-        if (!parseArgs(args, "Si", &u, &_u, &options) && u->length() >= 1)
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&options)) && u->length() >= 1)
         {
             UnicodeString result;
             result += u_foldCase(u->char32At(0), options);
@@ -908,15 +945,15 @@ static PyObject *t_char_digit(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &c))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c)))
             return PyInt_FromLong(u_digit(c, (int8_t) 10));
-        if (!parseArgs(args, "S", &u, &_u) && u->length() >= 1)
+        if (!parseArgs(args, arg::S(&u, &_u)) && u->length() >= 1)
             return PyInt_FromLong(u_digit(u->char32At(0), (int8_t) 10));
         break;
       case 2:
-        if (!parseArgs(args, "ii", &c, &radix))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c), arg::i(&radix)))
             return PyInt_FromLong(u_digit(c, (int8_t) radix));
-        if (!parseArgs(args, "Si", &u, &_u, &radix) && u->length() >= 1)
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&radix)) && u->length() >= 1)
             return PyInt_FromLong(u_digit(u->char32At(0), (int8_t) radix));
         break;
     }
@@ -931,11 +968,11 @@ static PyObject *t_char_forDigit(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &c))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c)))
             return PyInt_FromLong(u_forDigit(c, (int8_t) 10));
         break;
       case 2:
-        if (!parseArgs(args, "ii", &c, &radix))
+        if (!parseArgs(args, arg::Enum<UChar32>(&c), arg::i(&radix)))
             return PyInt_FromLong(u_forDigit(c, (int8_t) radix));
         break;
     }
@@ -950,9 +987,9 @@ static PyObject *t_char_charAge(PyTypeObject *type, PyObject *arg)
     UnicodeString *u, _u;
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
         u_charAge(c, versionInfo);
-    else if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    else if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
         u_charAge(u->char32At(0), versionInfo);
     else
         return PyErr_SetArgsError((PyObject *) type, "charAge", arg);
@@ -980,11 +1017,11 @@ static PyObject *t_char_getFC_NFKC_Closure(PyTypeObject *type, PyObject *arg)
     UChar32 c;
     int32_t size;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
     {
         STATUS_CALL(size = u_getFC_NFKC_Closure(c, buffer, 128, &status));
     }
-    else if (!parseArg(arg, "S", &u, &_u) && u->length() >= 1)
+    else if (!parseArg(arg, arg::S(&u, &_u)) && u->length() >= 1)
     {
         STATUS_CALL(size = u_getFC_NFKC_Closure(u->char32At(0),
                                                 buffer, 128, &status));
@@ -999,11 +1036,13 @@ static PyObject *t_char_getFC_NFKC_Closure(PyTypeObject *type, PyObject *arg)
 static PyObject *t_char_hasIDType(PyTypeObject *type, PyObject *args)
 {
     UChar32 c;
-    int idType;
+    UIdentifierType idType;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &c, &idType))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&c),
+                       arg::Enum<UIdentifierType>(&idType)))
             Py_RETURN_BOOL(u_hasIDType(c, (UIdentifierType) idType));
         break;
     }
@@ -1015,7 +1054,7 @@ static PyObject *t_char_getIDTypes(PyTypeObject *type, PyObject *arg)
 {
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
     {
         UIdentifierType types[64]; // more than there are enum values
         int32_t size;
@@ -1043,7 +1082,7 @@ static PyObject *t_ucpmap_get(t_ucpmap *self, PyObject *arg)
 {
     UChar32 c;
 
-    if (!parseArg(arg, "i", &c))
+    if (!parseArg(arg, arg::Enum<UChar32>(&c)))
     {
         return PyInt_FromLong(ucpmap_get(self->object, c));
     }
@@ -1058,19 +1097,22 @@ static PyObject *t_ucpmap_getRange(t_ucpmap *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &start))
+        if (!parseArgs(args, arg::Enum<UChar32>(&start)))
         {
             return PyInt_FromLong(ucpmap_getRange(self->object, start, UCPMAP_RANGE_NORMAL, 0, NULL, NULL, NULL));
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &start, &option))
+        if (!parseArgs(args, arg::Enum<UChar32>(&start), arg::i(&option)))
         {
             return PyInt_FromLong(ucpmap_getRange(self->object, start, (UCPMapRangeOption) option, (uint32_t) surrogateValue, NULL, NULL, NULL));
         }
         break;
       case 3:
-        if (!parseArgs(args, "iii", &start, &option, &surrogateValue))
+        if (!parseArgs(args,
+                       arg::Enum<UChar32>(&start),
+                       arg::i(&option),
+                       arg::i(&surrogateValue)))
         {
             return PyInt_FromLong(ucpmap_getRange(self->object, start, (UCPMapRangeOption) option, (uint32_t) surrogateValue, NULL, NULL, NULL));
         }
