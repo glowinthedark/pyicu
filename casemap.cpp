@@ -30,6 +30,8 @@
 #include "locale.h"
 #include "macros.h"
 
+#include "arg.h"
+
 
 /* CaseMap */
 
@@ -198,7 +200,7 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -224,7 +226,9 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "SO", &EditsType_, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -248,7 +252,9 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PS", TYPE_CLASSID(Locale), &locale, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -271,7 +277,7 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iS", &options, &u, &_u))
+        if (!parseArgs(args, arg::i(&options), arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -297,8 +303,10 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
         break;
 
       case 3:
-        if (!parseArgs(args, "PSO", TYPE_CLASSID(Locale), &EditsType_,
-                       &locale, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -321,7 +329,10 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iSO", &EditsType_, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -345,8 +356,10 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PiS", TYPE_CLASSID(Locale),
-                       &locale, &options, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -372,8 +385,11 @@ static PyObject *t_casemap_toLower(PyTypeObject *type, PyObject *args)
         break;
 
       case 4:
-        if (!parseArgs(args, "PiSO", TYPE_CLASSID(Locale), &EditsType_,
-                       &locale, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -411,7 +427,7 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -437,7 +453,7 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "SO", &EditsType_, &u, &_u, &edits))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -461,7 +477,9 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PS", TYPE_CLASSID(Locale), &locale, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -484,7 +502,7 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iS", &options, &u, &_u))
+        if (!parseArgs(args, arg::i(&options), arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -510,8 +528,10 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
         break;
 
       case 3:
-        if (!parseArgs(args, "PSO", TYPE_CLASSID(Locale), &EditsType_,
-                       &locale, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -534,7 +554,10 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iSO", &EditsType_, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -558,8 +581,10 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PiS", TYPE_CLASSID(Locale),
-                       &locale, &options, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -585,8 +610,11 @@ static PyObject *t_casemap_toUpper(PyTypeObject *type, PyObject *args)
         break;
 
       case 4:
-        if (!parseArgs(args, "PiSO", TYPE_CLASSID(Locale), &EditsType_,
-                       &locale, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -625,7 +653,7 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -651,7 +679,9 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "SO", &EditsType_, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -675,7 +705,9 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PS", TYPE_CLASSID(Locale), &locale, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -698,7 +730,9 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "PS", TYPE_CLASSID(BreakIterator), &iter, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -721,7 +755,7 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iS", &options, &u, &_u))
+        if (!parseArgs(args, arg::i(&options), arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -747,8 +781,10 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
         break;
 
       case 3:
-        if (!parseArgs(args, "PSO", TYPE_CLASSID(Locale), &EditsType_,
-                       &locale, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -771,8 +807,10 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "PSO", TYPE_CLASSID(BreakIterator), &EditsType_,
-                       &iter, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -795,7 +833,10 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iSO", &EditsType_, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -819,9 +860,10 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PPS",
-                       TYPE_CLASSID(Locale), TYPE_CLASSID(BreakIterator),
-                       &locale, &iter, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -844,9 +886,10 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "PiS",
-                       TYPE_CLASSID(Locale),
-                       &locale, &options, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -871,9 +914,10 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iPS",
-                       TYPE_CLASSID(BreakIterator),
-                       &options, &iter, &u, &_u))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -899,9 +943,11 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
         break;
 
       case 4:
-        if (!parseArgs(args, "PPSO",
-                       TYPE_CLASSID(Locale), TYPE_CLASSID(BreakIterator),
-                       &EditsType_, &locale, &iter, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -924,9 +970,11 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "PiSO",
-                       TYPE_CLASSID(Locale), &EditsType_,
-                       &locale, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -951,9 +999,11 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
 
             return ICUException(status).reportError();
         }
-        if (!parseArgs(args, "iPSO",
-                       TYPE_CLASSID(BreakIterator), &EditsType_,
-                       &options, &iter, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -977,9 +1027,11 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "PiPS",
-                       TYPE_CLASSID(Locale), TYPE_CLASSID(BreakIterator),
-                       &locale, &options, &iter, &u, &_u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -1007,9 +1059,12 @@ static PyObject *t_casemap_toTitle(PyTypeObject *type, PyObject *args)
         break;
 
       case 5:
-        if (!parseArgs(args, "PiPSO",
-                       TYPE_CLASSID(Locale), TYPE_CLASSID(BreakIterator),
-                       &EditsType_, &locale, &options, &iter, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::i(&options),
+                       arg::P<BreakIterator>(TYPE_CLASSID(BreakIterator), &iter),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -1048,7 +1103,7 @@ static PyObject *t_casemap_fold(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -1074,7 +1129,7 @@ static PyObject *t_casemap_fold(PyTypeObject *type, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "SO", &EditsType_, &u, &_u, &edits))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -1098,7 +1153,7 @@ static PyObject *t_casemap_fold(PyTypeObject *type, PyObject *args)
             return ICUException(status).reportError();
         }
 
-        if (!parseArgs(args, "iS", &options, &u, &_u))
+        if (!parseArgs(args, arg::i(&options), arg::S(&u, &_u)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -1124,7 +1179,10 @@ static PyObject *t_casemap_fold(PyTypeObject *type, PyObject *args)
         break;
 
       case 3:
-        if (!parseArgs(args, "iSO", &EditsType_, &options, &u, &_u, &edits))
+        if (!parseArgs(args,
+                       arg::i(&options),
+                       arg::S(&u, &_u),
+                       arg::O(&EditsType_, &edits)))
         {
             Buffer dest(u->length() + 8);
             UErrorCode status = U_ZERO_ERROR;
@@ -1183,7 +1241,7 @@ static PyObject *t_edits_addUnchanged(t_edits *self, PyObject *arg)
 {
     int length;
 
-    if (!parseArg(arg, "i", &length))
+    if (!parseArg(arg, arg::i(&length)))
     {
         self->object->addUnchanged(length);
         Py_RETURN_NONE;
@@ -1196,7 +1254,7 @@ static PyObject *t_edits_addReplace(t_edits *self, PyObject *args)
 {
     int oldLength, newLength;
 
-    if (!parseArgs(args, "ii", &oldLength, &newLength))
+    if (!parseArgs(args, arg::i(&oldLength), arg::i(&newLength)))
     {
         self->object->addReplace(oldLength, newLength);
         Py_RETURN_NONE;
@@ -1243,7 +1301,9 @@ static PyObject *t_edits_mergeAndAppend(t_edits *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "OO", &EditsType_, &EditsType_, &ab, &bc))
+        if (!parseArgs(args,
+                       arg::O(&EditsType_, &ab),
+                       arg::O(&EditsType_, &bc)))
         {
             STATUS_CALL(self->object->mergeAndAppend(
                 *((t_edits *) ab)->object, *((t_edits *) bc)->object, status));
@@ -1292,7 +1352,7 @@ static PyObject *t_editsiterator_findSourceIndex(
 {
     int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         bool found;
         STATUS_CALL(found = self->object->findSourceIndex(index, status));
@@ -1310,7 +1370,7 @@ static PyObject *t_editsiterator_findDestinationIndex(
 {
     int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         bool found;
         STATUS_CALL(found = self->object->findDestinationIndex(index, status));
@@ -1326,7 +1386,7 @@ static PyObject *t_editsiterator_destinationIndexFromSourceIndex(
 {
     int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         STATUS_CALL(index = self->object->destinationIndexFromSourceIndex(
             index, status));
@@ -1343,7 +1403,7 @@ static PyObject *t_editsiterator_sourceIndexFromdestinationIndex(
 {
     int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         STATUS_CALL(index = self->object->sourceIndexFromDestinationIndex(
             index, status));

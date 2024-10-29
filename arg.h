@@ -188,13 +188,10 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (isDate(arg))
-        {
-            *d = PyObject_AsUDate(arg);
-            return 0;
-        }
-
-        return -1;
+        if (!isDate(arg))
+            return -1;
+        *d = PyObject_AsUDate(arg);
+        return 0;
     }
 };
 
@@ -516,6 +513,26 @@ public:
     }
 };
 
+class PythonObject {
+private:
+    PyTypeObject *const type;
+    PyObject **const obj;
+
+public:
+    PythonObject() = delete;
+
+    explicit PythonObject(PyTypeObject *param1, PyObject **param2) noexcept : type(param1), obj(param2) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!PyObject_TypeCheck(arg, type))
+            return -1;
+        
+        *obj = arg;
+        return 0;
+    }
+};
+
 #define _IS_POD(T)                                      \
   static_assert(std::is_trivial<T>::value);             \
   static_assert(std::is_standard_layout<T>::value)
@@ -529,6 +546,7 @@ _IS_POD(IntArray);
 _IS_POD(BytesToCStringAndSize);
 _IS_POD(None);
 _IS_POD(PythonBytes);
+_IS_POD(PythonObject);
 _IS_POD(SavedString);
 _IS_POD(StringOrUnicodeToFSCharsArg);
 _IS_POD(StringOrUnicodeToUtf8CharsArg);
@@ -552,9 +570,10 @@ using f = StringOrUnicodeToFSCharsArg;
 using H = IntArray;
 using i = Int;
 using k = BytesToCStringAndSize;
+using m = StringOrUnicodeToUtf8CharsArgArray;
 using N = None;
 using n = StringOrUnicodeToUtf8CharsArg;
-using m = StringOrUnicodeToUtf8CharsArgArray;
+using O = PythonObject;
 using S = String;
 template <typename T> using P = ICUObject<T>;
 template <typename T> using Q = ICUObjectArray<T>;
