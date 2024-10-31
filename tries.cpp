@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2019 Open Source Applications Foundation.
+ * Copyright (c) 2019-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,6 +27,8 @@
 #include "bases.h"
 #include "tries.h"
 #include "macros.h"
+
+#include "arg.h"
 
 #if U_ICU_VERSION_HEX >= 0x04080000
 
@@ -284,7 +286,7 @@ static PyObject *t_bytestriebuilder_add(
     charsArg key;
     int value;
 
-    if (!parseArgs(args, "ni", &key, &value))
+    if (!parseArgs(args, arg::n(&key), arg::i(&value)))
     {
         STATUS_CALL(self->object->add(key.c_str(), value, status));
         Py_RETURN_SELF();
@@ -304,7 +306,7 @@ static PyObject *t_bytestriebuilder_build(
 {
     int option;
 
-    if (!parseArg(arg, "i", &option))
+    if (!parseArg(arg, arg::i(&option)))
     {
         BytesTrie *trie;
 
@@ -339,7 +341,7 @@ static PyObject *t_bytestrie_resetToState(t_bytestrie *self, PyObject *arg)
 {
     PyObject *state;
 
-    if (!parseArg(arg, "O", &BytesTrieStateType_, &state))
+    if (!parseArg(arg, arg::O(&BytesTrieStateType_, &state)))
     {
         self->object->resetToState(*((t_bytestriestate *) state)->object);
         Py_RETURN_SELF();
@@ -366,10 +368,10 @@ static PyObject *t_bytestrie_first(t_bytestrie *self, PyObject *arg)
     int b;
     charsArg s;
 
-    if (!parseArg(arg, "i", &b))
+    if (!parseArg(arg, arg::i(&b)))
         return PyInt_FromLong(self->object->first(b));
 
-    if (!parseArg(arg, "n", &s) && s.size() == 1)
+    if (!parseArg(arg, arg::n(&s)) && s.size() == 1)
         return PyInt_FromLong(self->object->first(s.c_str()[0]));
 
     return PyErr_SetArgsError((PyObject *) self, "first", arg);
@@ -380,10 +382,10 @@ static PyObject *t_bytestrie_next(t_bytestrie *self, PyObject *arg)
     int b;
     charsArg s;
 
-    if (!parseArg(arg, "i", &b))
+    if (!parseArg(arg, arg::i(&b)))
         return PyInt_FromLong(self->object->next(b));
 
-    if (!parseArg(arg, "n", &s))
+    if (!parseArg(arg, arg::n(&s)))
         return PyInt_FromLong(self->object->next(s.c_str(), s.size()));
 
     return PyErr_SetArgsError((PyObject *) self, "next", arg);
@@ -435,7 +437,7 @@ int t_bytestrieiterator_init(t_bytestrieiterator *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "O", &BytesTrieType_, &trie))
+        if (!parseArgs(args, arg::O(&BytesTrieType_, &trie)))
         {
             INT_STATUS_CALL(iterator = new BytesTrieIterator(
                 *((t_bytestrie *) trie)->object, 0, status));
@@ -447,7 +449,7 @@ int t_bytestrieiterator_init(t_bytestrieiterator *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "Oi", &BytesTrieType_, &trie, &len))
+        if (!parseArgs(args, arg::O(&BytesTrieType_, &trie), arg::i(&len)))
         {
             INT_STATUS_CALL(iterator = new BytesTrieIterator(
                 *((t_bytestrie *) trie)->object, len, status));
@@ -561,7 +563,7 @@ static PyObject *t_ucharstriebuilder_add(
     UnicodeString *u, _u;
     int value;
 
-    if (!parseArgs(args, "Si", &u, &_u, &value))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::i(&value)))
     {
         STATUS_CALL(self->object->add(*u, value, status));
         Py_RETURN_SELF();
@@ -581,7 +583,7 @@ static PyObject *t_ucharstriebuilder_build(
 {
     int option;
 
-    if (!parseArg(arg, "i", &option))
+    if (!parseArg(arg, arg::i(&option)))
     {
         UCharsTrie *trie;
 
@@ -615,7 +617,7 @@ static PyObject *t_ucharstrie_resetToState(t_ucharstrie *self, PyObject *arg)
 {
     PyObject *state;
 
-    if (!parseArg(arg, "O", &UCharsTrieStateType_, &state))
+    if (!parseArg(arg, arg::O(&UCharsTrieStateType_, &state)))
     {
         self->object->resetToState(*((t_ucharstriestate *) state)->object);
         Py_RETURN_SELF();
@@ -642,10 +644,10 @@ static PyObject *t_ucharstrie_first(t_ucharstrie *self, PyObject *arg)
     int b;
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "i", &b))
+    if (!parseArg(arg, arg::i(&b)))
         return PyInt_FromLong(self->object->first(b));
 
-    if (!parseArg(arg, "S", &u, &_u) && u->length() == 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->length() == 1)
         return PyInt_FromLong(self->object->first(u->charAt(0)));
 
     return PyErr_SetArgsError((PyObject *) self, "first", arg);
@@ -657,10 +659,10 @@ static PyObject *t_ucharstrie_firstForCodePoint(
     int b;
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "i", &b))
+    if (!parseArg(arg, arg::i(&b)))
         return PyInt_FromLong(self->object->firstForCodePoint(b));
 
-    if (!parseArg(arg, "S", &u, &_u) && u->countChar32() == 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->countChar32() == 1)
         return PyInt_FromLong(self->object->firstForCodePoint(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) self, "firstForCodePoint", arg);
@@ -671,10 +673,10 @@ static PyObject *t_ucharstrie_next(t_ucharstrie *self, PyObject *arg)
     int b;
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "i", &b))
+    if (!parseArg(arg, arg::i(&b)))
         return PyInt_FromLong(self->object->next(b));
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
         return PyInt_FromLong(self->object->next(u->getBuffer(), u->length()));
 
     return PyErr_SetArgsError((PyObject *) self, "next", arg);
@@ -686,10 +688,10 @@ static PyObject *t_ucharstrie_nextForCodePoint(
     int b;
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "i", &b))
+    if (!parseArg(arg, arg::i(&b)))
         return PyInt_FromLong(self->object->nextForCodePoint(b));
 
-    if (!parseArg(arg, "S", &u, &_u) && u->countChar32() == 1)
+    if (!parseArg(arg, arg::S(&u, &_u)) && u->countChar32() == 1)
         return PyInt_FromLong(self->object->next(u->char32At(0)));
 
     return PyErr_SetArgsError((PyObject *) self, "nextForCodePoint", arg);
@@ -734,7 +736,7 @@ int t_ucharstrieiterator_init(t_ucharstrieiterator *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "O", &UCharsTrieType_, &trie))
+        if (!parseArgs(args, arg::O(&UCharsTrieType_, &trie)))
         {
             INT_STATUS_CALL(iterator = new UCharsTrieIterator(
                 *((t_ucharstrie *) trie)->object, 0, status));
@@ -746,7 +748,7 @@ int t_ucharstrieiterator_init(t_ucharstrieiterator *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "Oi", &UCharsTrieType_, &trie, &len))
+        if (!parseArgs(args, arg::O(&UCharsTrieType_, &trie), arg::i(&len)))
         {
             INT_STATUS_CALL(iterator = new UCharsTrieIterator(
                 *((t_ucharstrie *) trie)->object, len, status));
