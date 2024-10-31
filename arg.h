@@ -533,7 +533,7 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyBytes_Check(arg) || PyUnicode_Check(arg) ||  isUnicodeString(arg))
+        if (PyBytes_Check(arg) || PyUnicode_Check(arg) || isUnicodeString(arg))
         {
             if (PyObject_TypeCheck(arg, &UObjectType_))
               *u = (UnicodeString *) ((t_uobject *) arg)->object;
@@ -646,6 +646,31 @@ public:
             return -1;
 
         *u = (UnicodeString *) ((t_uobject *) arg)->object;
+        return 0;
+    }
+};
+
+class UnicodeStringRef {
+private:
+    UnicodeString *const u;
+
+public:
+    UnicodeStringRef() = delete;
+
+    explicit UnicodeStringRef(UnicodeString *param) noexcept : u(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!(PyBytes_Check(arg) || PyUnicode_Check(arg)))
+            return -1;
+
+        try {
+            PyObject_AsUnicodeString(arg, *u);
+        } catch (ICUException e) {
+            e.reportError();
+            return -1;
+        }
+
         return 0;
     }
 };
@@ -789,6 +814,7 @@ _IS_POD(StringOrUnicodeToUtf8CharsArgArray);
 _IS_POD(UnicodeStringAndPythonObject);
 _IS_POD(UnicodeStringArg);
 _IS_POD(UnicodeStringArray);
+_IS_POD(UnicodeStringRef);
 
 #undef _IS_POD
 
@@ -818,6 +844,7 @@ template <typename T> using p = SavedICUObject<T>;
 template <typename T> using Q = ICUObjectArray<T>;
 template <typename T> using R = ICUObjectValueArray<T>;
 using S = String;
+using s = UnicodeStringRef;
 using T = UnicodeStringArray;
 using U = UnicodeStringArg;
 using V = UnicodeStringAndPythonObject;

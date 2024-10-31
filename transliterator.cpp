@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2009-2019 Open Source Applications Foundation.
+ * Copyright (c) 2009-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,8 @@
 #include "transliterator.h"
 #include "unicodeset.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UTransDirection)
 
@@ -307,7 +309,7 @@ static int t_transliterator_init(t_transliterator *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             self->object = new PythonTransliterator(self, *u);
             self->flags = T_OWNED;
@@ -316,8 +318,9 @@ static int t_transliterator_init(t_transliterator *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "SP", &u, &_u, TYPE_CLASSID(UnicodeFilter),
-                       &adoptedFilter))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::P<UnicodeFilter>(TYPE_CLASSID(UnicodeFilter), &adoptedFilter)))
         {
             self->object = new PythonTransliterator(self, *u, (UnicodeFilter *) adoptedFilter->clone());
             self->flags = T_OWNED;
@@ -350,14 +353,14 @@ static PyObject *t_transliterator_toRules(t_transliterator *self,
                                           PyObject *args)
 {
     UnicodeString u;
-    int b = 0;
+    UBool b = 0;
 
     switch (PyTuple_Size(args)) {
       case 0:
         PYTHON_CALL(self->object->toRules(u, 0));
         return PyUnicode_FromUnicodeString(&u);
       case 1:
-        if (!parseArgs(args, "b", &b))
+        if (!parseArgs(args, arg::b(&b)))
         {
             PYTHON_CALL(self->object->toRules(u, b));
             return PyUnicode_FromUnicodeString(&u);
@@ -373,7 +376,7 @@ static PyObject *t_transliterator_transliterate(t_transliterator *self,
 {
     UnicodeString *u0, _u0;
     UnicodeString *u1, _u1;
-    t_utransposition *utransposition;
+    PyObject *utransposition;
     int32_t start, limit, len;
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
     PythonReplaceable *rep;
@@ -382,18 +385,18 @@ static PyObject *t_transliterator_transliterate(t_transliterator *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "U", &u0))
+        if (!parseArgs(args, arg::U(&u0)))
         {
             PYTHON_CALL(self->object->transliterate(*u0));
             Py_RETURN_ARG(args, 0);
         }
-        if (!parseArgs(args, "s", &_u0))
+        if (!parseArgs(args, arg::s(&_u0)))
         {
             PYTHON_CALL(self->object->transliterate(_u0));
             return PyUnicode_FromUnicodeString(&_u0);
         }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
-        if (!parseArgs(args, "P", TYPE_CLASSID(PythonReplaceable), &rep))
+        if (!parseArgs(args, arg::P<PythonReplaceable>(TYPE_CLASSID(PythonReplaceable), &rep)))
         {
             PYTHON_CALL(self->object->transliterate(*rep));
             Py_RETURN_ARG(args, 0);
@@ -401,81 +404,96 @@ static PyObject *t_transliterator_transliterate(t_transliterator *self,
 #endif
         break;
       case 2:
-        if (!parseArgs(args, "UO", &UTransPositionType_, &u0, &utransposition))
+        if (!parseArgs(args,
+                       arg::U(&u0),
+                       arg::O(&UTransPositionType_, &utransposition)))
         {
-            STATUS_PYTHON_CALL(self->object->transliterate(*u0, *utransposition->object, status));
+            STATUS_PYTHON_CALL(self->object->transliterate(*u0, *((t_utransposition *) utransposition)->object, status));
             Py_RETURN_ARG(args, 0);
         }
-        if (!parseArgs(args, "sO", &UTransPositionType_, &_u0, &utransposition))
+        if (!parseArgs(args,
+                       arg::s(&_u0),
+                       arg::O(&UTransPositionType_, &utransposition)))
         {
-            STATUS_PYTHON_CALL(self->object->transliterate(_u0, *utransposition->object, status));
+            STATUS_PYTHON_CALL(self->object->transliterate(_u0, *((t_utransposition *) utransposition)->object, status));
             return PyUnicode_FromUnicodeString(&_u0);
         }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
-        if (!parseArgs(args, "PO", TYPE_CLASSID(PythonReplaceable), &UTransPositionType_, &rep, &utransposition))
+        if (!parseArgs(args,
+                       arg::P<PythonReplaceable>(TYPE_CLASSID(PythonReplaceable), &rep),
+                       arg::O(&UTransPositionType_, &utransposition)))
         {
-            STATUS_PYTHON_CALL(self->object->transliterate(*rep, *utransposition->object, status));
+            STATUS_PYTHON_CALL(self->object->transliterate(*rep, *((t_utransposition *) utransposition)->object, status));
             Py_RETURN_ARG(args, 0);
         }
 #endif
         break;
       case 3:
-        if (!parseArgs(args, "Uii", &u0, &start, &limit))
+        if (!parseArgs(args, arg::U(&u0), arg::i(&start), arg::i(&limit)))
         {
             PYTHON_CALL(limit = self->object->transliterate(*u0, start, limit));
             return PyInt_FromLong(limit);
         }
-        if (!parseArgs(args, "sii", &_u0, &start, &limit))
+        if (!parseArgs(args, arg::s(&_u0), arg::i(&start), arg::i(&limit)))
         {
             PYTHON_CALL(self->object->transliterate(_u0, start, limit));
             return PyUnicode_FromUnicodeString(&_u0);
         }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
-        if (!parseArgs(args, "Pii", TYPE_CLASSID(PythonReplaceable), &rep, &start, &limit))
+        if (!parseArgs(args,
+                       arg::P<PythonReplaceable>(TYPE_CLASSID(PythonReplaceable), &rep),
+                       arg::i(&start), arg::i(&limit)))
         {
             PYTHON_CALL(limit = self->object->transliterate(*rep, start, limit));
             return PyInt_FromLong(limit);
         }
 #endif
-        if (!parseArgs(args, "UOS", &UTransPositionType_,
-                       &u0, &utransposition, &u1, &_u1))
+        if (!parseArgs(args,
+                       arg::U(&u0),
+                       arg::O(&UTransPositionType_, &utransposition),
+                       arg::S(&u1, &_u1)))
         {
             STATUS_CALL(len = toUChar32(*u1, &c, status));
             if (len == 1)
             {
-                STATUS_PYTHON_CALL(self->object->transliterate(*u0, *utransposition->object, c, status));
+                STATUS_PYTHON_CALL(self->object->transliterate(*u0, *((t_utransposition *) utransposition)->object, c, status));
             }
             else
             {
-                STATUS_PYTHON_CALL(self->object->transliterate(*u0, *utransposition->object, _u1, status));
+                STATUS_PYTHON_CALL(self->object->transliterate(*u0, *((t_utransposition *) utransposition)->object, _u1, status));
             }
             Py_RETURN_ARG(args, 0);
         }
-        if (!parseArgs(args, "sOS", &UTransPositionType_, 
-                       &_u0, &utransposition, &u1, &_u1))
+        if (!parseArgs(args,
+                       arg::s(&_u0),
+                       arg::O(&UTransPositionType_, &utransposition),
+                       arg::S(&u1, &_u1)))
         {
             STATUS_CALL(len = toUChar32(*u1, &c, status));
             if (len == 1)
             {
-                STATUS_PYTHON_CALL(self->object->transliterate(_u0, *utransposition->object, c, status));
+                STATUS_PYTHON_CALL(self->object->transliterate(_u0, *((t_utransposition *) utransposition)->object, c, status));
             }
             else
             {
-                STATUS_PYTHON_CALL(self->object->transliterate(_u0, *utransposition->object, _u1, status));
+                STATUS_PYTHON_CALL(self->object->transliterate(_u0, *((t_utransposition *) utransposition)->object, _u1, status));
             }
             return PyUnicode_FromUnicodeString(&_u0);
         }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
-        if (!parseArgs(args, "POS", TYPE_CLASSID(PythonReplaceable), &UTransPositionType_, &rep, &utransposition, &u1, &_u1))
+        if (!parseArgs(args,
+                       arg::P<PythonReplaceable>(TYPE_CLASSID(PythonReplaceable), &rep),
+                       arg::O(&UTransPositionType_, &utransposition),
+                       arg::S(&u1, &_u1)))
         {
             STATUS_CALL(len = toUChar32(*u1, &c, status));
             if (len == 1)
             {
-                STATUS_PYTHON_CALL(self->object->transliterate(*rep, *utransposition->object, c, status));
+                STATUS_PYTHON_CALL(self->object->transliterate(*rep, *((t_utransposition *) utransposition)->object, c, status));
             }
             else
             {
-                STATUS_PYTHON_CALL(self->object->transliterate(*rep, *utransposition->object, _u1, status));
+                STATUS_PYTHON_CALL(self->object->transliterate(*rep, *((t_utransposition *) utransposition)->object, _u1, status));
             }
             Py_RETURN_ARG(args, 0);
         }
@@ -490,25 +508,31 @@ static PyObject *t_transliterator_finishTransliteration(t_transliterator *self,
                                                         PyObject *args)
 {
     UnicodeString *u, _u;
-    t_utransposition *utransposition;
+    PyObject *utransposition;
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
     PythonReplaceable *rep;
 #endif
 
-    if (!parseArgs(args, "UO", &UTransPositionType_, &u, &utransposition))
+    if (!parseArgs(args,
+                   arg::U(&u),
+                   arg::O(&UTransPositionType_, &utransposition)))
     {
-        self->object->finishTransliteration(*u, *utransposition->object);
+        self->object->finishTransliteration(*u, *((t_utransposition *) utransposition)->object);
         Py_RETURN_ARG(args, 0);
     }
-    if (!parseArgs(args, "sO", &UTransPositionType_, &_u, &utransposition))
+    if (!parseArgs(args,
+                   arg::s(&_u),
+                   arg::O(&UTransPositionType_, &utransposition)))
     {
-        self->object->finishTransliteration(_u, *utransposition->object);
+        self->object->finishTransliteration(_u, *((t_utransposition *) utransposition)->object);
         return PyUnicode_FromUnicodeString(&_u);
     }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
-    if (!parseArgs(args, "PO", TYPE_CLASSID(PythonReplaceable), &UTransPositionType_, &rep, &utransposition))
+    if (!parseArgs(args,
+                   arg::P<PythonReplaceable>(TYPE_CLASSID(PythonReplaceable), &rep),
+                   arg::O(&UTransPositionType_, &utransposition)))
     {
-        self->object->finishTransliteration(*rep, *utransposition->object);
+        self->object->finishTransliteration(*rep, *((t_utransposition *) utransposition)->object);
         Py_RETURN_ARG(args, 0);
     }
 #endif
@@ -520,31 +544,38 @@ static PyObject *t_transliterator_filteredTransliterate(t_transliterator *self,
                                                         PyObject *args)
 {
     UnicodeString *u, _u;
-    t_utransposition *utransposition;
-    int incremental;
+    PyObject *utransposition;
+    UBool incremental;
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
     PythonReplaceable *rep;
 #endif
 
-    if (!parseArgs(args, "UOB", &UTransPositionType_, &u, &utransposition,
-                   &incremental))
+    if (!parseArgs(args,
+                   arg::U(&u),
+                   arg::O(&UTransPositionType_, &utransposition),
+                   arg::B(&incremental)))
     {
-        self->object->filteredTransliterate(*u, *utransposition->object,
+        self->object->filteredTransliterate(*u, *((t_utransposition *) utransposition)->object,
                                             incremental);
         Py_RETURN_ARG(args, 0);
     }
-    if (!parseArgs(args, "sOB", &UTransPositionType_, &_u, &utransposition,
-                   &incremental))
+    if (!parseArgs(args,
+                   arg::s(&_u),
+                   arg::O(&UTransPositionType_, &utransposition),
+                   arg::B(&incremental)))
     {
-        self->object->filteredTransliterate(_u, *utransposition->object,
+        self->object->filteredTransliterate(_u, *((t_utransposition *) utransposition)->object,
                                             incremental);
         return PyUnicode_FromUnicodeString(&_u);
     }
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 0, 0)
-    if (!parseArgs(args, "POB", TYPE_CLASSID(PythonReplaceable), &UTransPositionType_, &rep, &utransposition, &incremental))
+    if (!parseArgs(args,
+                   arg::P<PythonReplaceable>(TYPE_CLASSID(PythonReplaceable), &rep),
+                   arg::O(&UTransPositionType_, &utransposition),
+                   arg::B(&incremental)))
     {
-        self->object->filteredTransliterate(*rep, *utransposition->object,
-                                            incremental);
+        self->object->filteredTransliterate(
+            *rep, *((t_utransposition *) utransposition)->object, incremental);
         Py_RETURN_ARG(args, 0);
     }
 #endif
@@ -627,7 +658,7 @@ static PyObject *t_transliterator_adoptFilter(t_transliterator *self,
 
     if (arg == Py_None)
         self->object->adoptFilter(NULL);
-    else if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeFilter), &filter))
+    else if (!parseArg(arg, arg::P<UnicodeFilter>(TYPE_CLASSID(UnicodeFilter), &filter)))
         self->object->adoptFilter((UnicodeFilter *) filter->clone());
     else
         return PyErr_SetArgsError((PyObject *) self, "adoptFilter", arg);
@@ -652,7 +683,7 @@ static PyObject *t_transliterator_createInstance(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             STATUS_CALL(transliterator = Transliterator::createInstance(
                 *u, direction, status));
@@ -660,7 +691,9 @@ static PyObject *t_transliterator_createInstance(PyTypeObject *type,
         }
         break;
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &direction))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UTransDirection>(&direction)))
         {
             STATUS_CALL(transliterator = Transliterator::createInstance(
                 *u, direction, status));
@@ -682,7 +715,7 @@ static PyObject *t_transliterator_createFromRules(PyTypeObject *type,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             STATUS_PARSER_CALL(transliterator = Transliterator::createFromRules(
                 *u0, *u1, direction, parseError, status));
@@ -690,7 +723,10 @@ static PyObject *t_transliterator_createFromRules(PyTypeObject *type,
         }
         break;
       case 3:
-        if (!parseArgs(args, "SSi", &u0, &_u0, &u1, &_u1, &direction))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::S(&u1, &_u1),
+                       arg::Enum<UTransDirection>(&direction)))
         {
             STATUS_PARSER_CALL(transliterator = Transliterator::createFromRules(
                 *u0, *u1, direction, parseError, status));
@@ -707,7 +743,7 @@ static PyObject *t_transliterator_registerInstance(PyTypeObject *type,
 {
     Transliterator *transliterator;
 
-    if (!parseArgs(args, "P", TYPE_CLASSID(Transliterator), &transliterator))
+    if (!parseArgs(args, arg::P<Transliterator>(TYPE_CLASSID(Transliterator), &transliterator)))
     {
         Transliterator::registerInstance(transliterator->clone());
         Py_RETURN_NONE;
