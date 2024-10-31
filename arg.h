@@ -81,6 +81,30 @@ public:
     }
 };
 
+class BooleanArray {
+private:
+    UBool **const array;
+    size_t *const len;
+
+public:
+    BooleanArray() = delete;
+
+    explicit BooleanArray(UBool **param1, size_t *param2) noexcept
+        : array(param1), len(param2) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!PySequence_Check(arg))
+            return -1;
+
+        *array = toUBoolArray(arg, len);
+        if (!*array)
+            return -1;
+
+        return 0;
+    }
+};    
+
 class Double {
 private:
     double *const d;
@@ -107,6 +131,41 @@ public:
         return -1;
     }
 };
+
+class DoubleArray {
+private:
+    double **const array;
+    size_t *const len;
+
+public:
+    DoubleArray() = delete;
+
+    explicit DoubleArray(double **param1, size_t *param2) noexcept
+        : array(param1), len(param2) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!PySequence_Check(arg))
+            return -1;
+
+        if (PySequence_Length(arg) > 0)
+        {
+            PyObject *obj = PySequence_GetItem(arg, 0);
+            int ok = (PyFloat_Check(obj) ||
+                      PyInt_Check(obj) ||
+                      PyLong_Check(obj));
+            Py_DECREF(obj);
+            if (!ok)
+                return -1;
+        }
+
+        *array = toDoubleArray(arg, len);
+        if (!*array)
+            return -1;
+
+        return 0;
+    }
+};    
 
 class Int {
 private:
@@ -150,18 +209,16 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PySequence_Check(arg))
-        {
-            if (PySequence_Length(arg) > 0)
-            {
-                PyObject *obj = PySequence_GetItem(arg, 0);
-                int ok = (PyInt_Check(obj) || PyLong_Check(obj));
-                Py_DECREF(obj);
-                if (!ok)
-                    return -1;
-            }
-        } else {
+        if (!PySequence_Check(arg))
             return -1;
+
+        if (PySequence_Length(arg) > 0)
+        {
+            PyObject *obj = PySequence_GetItem(arg, 0);
+            int ok = (PyInt_Check(obj) || PyLong_Check(obj));
+            Py_DECREF(obj);
+            if (!ok)
+                return -1;
         }
 
         *array = toIntArray(arg, len);
@@ -176,6 +233,24 @@ template <typename T> IntArray Enums(T **param, size_t *len) {
     static_assert(sizeof(T) == sizeof(int), "wrong size of enum");
     return IntArray((int **) param, len);
 }
+
+class Long {
+private:
+    PY_LONG_LONG *const l;
+
+public:
+    Long() = delete;
+
+    explicit Long(PY_LONG_LONG *param) noexcept : l(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!(PyLong_Check(arg) || PyInt_Check(arg)))
+            return -1;
+        *l = PyLong_AsLongLong(arg);
+        return 0;
+    }
+};
 
 class Date {
 private:
@@ -688,16 +763,19 @@ public:
 
 _IS_POD(AnyPythonObject);
 _IS_POD(Boolean);
+_IS_POD(BooleanArray);
 _IS_POD(BooleanStrict);
 _IS_POD(BytesToCStringAndSize);
 _IS_POD(CString);
 _IS_POD(Date);
 _IS_POD(Double);
+_IS_POD(DoubleArray);
 _IS_POD(ICUObject<UObject>);
 _IS_POD(ICUObjectArray<UObject>);
 _IS_POD(ICUObjectValueArray<UObject>);
 _IS_POD(Int);
 _IS_POD(IntArray);
+_IS_POD(Long);
 _IS_POD(None);
 _IS_POD(PythonBytes);
 _IS_POD(PythonCallable);
@@ -722,10 +800,13 @@ using C = PythonBytes;
 using c = CString;
 using D = Date;
 using d = Double;
+using F = DoubleArray;
 using f = StringOrUnicodeToFSCharsArg;
+using G = BooleanArray;
 using H = IntArray;
 using i = Int;
 using K = AnyPythonObject;
+using L = Long;
 using k = BytesToCStringAndSize;
 using M = PythonCallable;
 using m = StringOrUnicodeToUtf8CharsArgArray;

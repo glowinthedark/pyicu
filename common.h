@@ -479,6 +479,8 @@ UObject **pl2cpa(PyObject *arg, size_t *len, classid id, PyTypeObject *type);
 PyObject *cpa2pl(UObject **array, size_t len, PyObject *(*wrap)(UObject *, int));
 
 int *toIntArray(PyObject *arg, size_t *len);
+double *toDoubleArray(PyObject *arg, size_t *len);
+UBool *toUBoolArray(PyObject *arg, size_t *len);
 charsArg *toCharsArgArray(PyObject *arg, size_t *len);
 UnicodeString *toUnicodeStringArray(PyObject *arg, size_t *len);
 

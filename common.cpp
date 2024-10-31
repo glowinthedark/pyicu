@@ -891,17 +891,17 @@ int *toIntArray(PyObject *arg, size_t *len)
     return NULL;
 }
 
-static double *toDoubleArray(PyObject *arg, int *len)
+double *toDoubleArray(PyObject *arg, size_t *len)
 {
     if (PySequence_Check(arg))
     {
-        *len = (int) PySequence_Size(arg);
+        *len = PySequence_Size(arg);
         double *array = new double[*len + 1];
 
         if (!array)
           return (double *) PyErr_NoMemory();
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
             if (PyFloat_Check(obj))
@@ -935,17 +935,17 @@ static double *toDoubleArray(PyObject *arg, int *len)
     return NULL;
 }
 
-static UBool *toUBoolArray(PyObject *arg, int *len)
+UBool *toUBoolArray(PyObject *arg, size_t *len)
 {
     if (PySequence_Check(arg))
     {
-        *len = (int) PySequence_Size(arg);
+        *len = PySequence_Size(arg);
         UBool *array = new UBool[*len + 1];
 
         if (!array)
           return (UBool *) PyErr_NoMemory();
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
             array[i] = (UBool) PyObject_IsTrue(obj);
@@ -1536,9 +1536,11 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
           {
               double **array = va_arg(list, double **);
               int *len = va_arg(list, int *);
-              *array = toDoubleArray(arg, len);
+              size_t size;
+              *array = toDoubleArray(arg, &size);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 
@@ -1546,9 +1548,11 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
           {
               UBool **array = va_arg(list, UBool **);
               int *len = va_arg(list, int *);
-              *array = toUBoolArray(arg, len);
+              size_t size;
+              *array = toUBoolArray(arg, &size);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 
