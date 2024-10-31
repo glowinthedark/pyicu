@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2010-2019 Open Source Applications Foundation.
+ * Copyright (c) 2010-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,6 +27,8 @@
 #include "bases.h"
 #include "unicodeset.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UMatchDegree)
 DECLARE_CONSTANTS_TYPE(USetSpanCondition)
@@ -270,13 +272,17 @@ static PyObject *t_unicodematcher_matches(t_unicodematcher *self,
                                           PyObject *args)
 {
     UnicodeString *u, _u;
-    int32_t offset, limit, incremental;
+    int offset, limit;
+    UBool incremental;
 
-    if (!parseArgs(args, "SiiB", &u, &_u, &offset, &limit, &incremental))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::i(&offset), arg::i(&limit),
+                   arg::B(&incremental)))
     {
         UMatchDegree degree =
             self->object->matches(*(Replaceable const *) u, offset, limit,
-                                  (UBool) incremental);
+                                  incremental);
 
         return Py_BuildValue("(ii)", degree, offset);
     }
@@ -288,16 +294,16 @@ static PyObject *t_unicodematcher_toPattern(t_unicodematcher *self,
                                             PyObject *args)
 {
     UnicodeString u;
-    int escapeUnprintable = 0;
+    UBool escapeUnprintable = 0;
 
     switch (PyTuple_Size(args)) {
       case 0:
         self->object->toPattern(u);
         return PyUnicode_FromUnicodeString(&u);
       case 1:
-        if (!parseArgs(args, "B", &escapeUnprintable))
+        if (!parseArgs(args, arg::B(&escapeUnprintable)))
         {
-            self->object->toPattern(u, (UBool) escapeUnprintable);
+            self->object->toPattern(u, escapeUnprintable);
             return PyUnicode_FromUnicodeString(&u);
         }
     }
@@ -310,7 +316,7 @@ static PyObject *t_unicodematcher_matchesIndexValue(t_unicodematcher *self,
 {
     int v;
 
-    if (!parseArg(arg, "i", &v))
+    if (!parseArg(arg, arg::i(&v)))
     {
         UBool b = self->object->matchesIndexValue((uint8_t) v);
         Py_RETURN_BOOL(b);
@@ -324,7 +330,7 @@ static PyObject *t_unicodematcher_addMatchSetTo(t_unicodematcher *self,
 {
     UnicodeSet *set;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         self->object->addMatchSetTo(*set);
         Py_RETURN_NONE;
@@ -346,13 +352,17 @@ static PyObject *t_unicodefilter_matches(t_unicodefilter *self,
 {
     UnicodeString *u;
     UnicodeString _u;
-    int32_t offset, limit, incremental;
+    int offset, limit;
+    UBool incremental;
 
-    if (!parseArgs(args, "SiiB", &u, &_u, &offset, &limit, &incremental))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::i(&offset), arg::i(&limit),
+                   arg::B(&incremental)))
     {
         UMatchDegree degree =
             self->object->matches(*(Replaceable const *) u, offset, limit,
-                                  (UBool) incremental);
+                                  incremental);
 
         return Py_BuildValue("(ii)", degree, offset);
     }
@@ -364,27 +374,27 @@ static PyObject *t_unicodefilter_toPattern(t_unicodefilter *self,
                                            PyObject *args)
 {
     UnicodeString *u, _u;
-    int escapeUnprintable = 0;
+    UBool escapeUnprintable = 0;
 
     switch (PyTuple_Size(args)) {
       case 0:
         self->object->toPattern(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
-            self->object->toPattern(*u, (UBool) escapeUnprintable);
+            self->object->toPattern(*u, escapeUnprintable);
             Py_RETURN_ARG(args, 0);
         }
-        if (!parseArgs(args, "B", &escapeUnprintable))
+        if (!parseArgs(args, arg::B(&escapeUnprintable)))
         {
-            self->object->toPattern(_u, (UBool) escapeUnprintable);
+            self->object->toPattern(_u, escapeUnprintable);
             return PyUnicode_FromUnicodeString(&_u);
         }
       case 2:
-        if (!parseArgs(args, "UB", &u, &escapeUnprintable))
+        if (!parseArgs(args, arg::U(&u), arg::B(&escapeUnprintable)))
         {
-            self->object->toPattern(*u, (UBool) escapeUnprintable);
+            self->object->toPattern(*u, escapeUnprintable);
             Py_RETURN_ARG(args, 0);
         }
     }
@@ -397,7 +407,7 @@ static PyObject *t_unicodefilter_matchesIndexValue(t_unicodefilter *self,
 {
     int v;
 
-    if (!parseArg(arg, "i", &v))
+    if (!parseArg(arg, arg::i(&v)))
     {
         UBool b = self->object->matchesIndexValue((uint8_t) v);
         Py_RETURN_BOOL(b);
@@ -411,7 +421,7 @@ static PyObject *t_unicodefilter_addMatchSetTo(t_unicodefilter *self,
 {
     UnicodeSet *set;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         self->object->addMatchSetTo(*set);
         Py_RETURN_NONE;
@@ -422,10 +432,9 @@ static PyObject *t_unicodefilter_addMatchSetTo(t_unicodefilter *self,
 
 static PyObject *t_unicodefilter_contains(t_unicodefilter *self, PyObject *arg)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UChar32 c;
         int32_t len;
@@ -457,14 +466,14 @@ static int t_unicodeset_init(t_unicodeset *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             INT_STATUS_CALL(set = new UnicodeSet(*u0, status));
             self->object = set;
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "P", TYPE_CLASSID(UnicodeSet), &set))
+        if (!parseArgs(args, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
         {
             self->object = new UnicodeSet(*set);
             self->flags = T_OWNED;
@@ -473,7 +482,7 @@ static int t_unicodeset_init(t_unicodeset *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -539,7 +548,7 @@ static PyObject *t_unicodeset_set(t_unicodeset *self, PyObject *args)
     UnicodeString *u0, *u1;
     UnicodeString _u0, _u1;
 
-    if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+    if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
     {
         UChar32 c0, c1;
         int32_t l0, l1;
@@ -564,7 +573,7 @@ static PyObject *t_unicodeset_add(t_unicodeset *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UChar32 c0;
             int32_t l0;
@@ -586,7 +595,7 @@ static PyObject *t_unicodeset_add(t_unicodeset *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -611,12 +620,12 @@ static PyObject *t_unicodeset_addAll(t_unicodeset *self, PyObject *arg)
     UnicodeString *u, _u;
     UnicodeSet *set;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->addAll(*u);
         Py_RETURN_SELF();
     }
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         self->object->addAll(*set);
         Py_RETURN_SELF();
@@ -633,7 +642,7 @@ static PyObject *t_unicodeset_retain(t_unicodeset *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UChar32 c0;
             int32_t l0;
@@ -650,7 +659,7 @@ static PyObject *t_unicodeset_retain(t_unicodeset *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -675,12 +684,12 @@ static PyObject *t_unicodeset_retainAll(t_unicodeset *self, PyObject *arg)
     UnicodeString *u, _u;
     UnicodeSet *set;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->retainAll(*u);
         Py_RETURN_SELF();
     }
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         self->object->retainAll(*set);
         Py_RETURN_SELF();
@@ -701,7 +710,7 @@ static PyObject *t_unicodeset_complement(t_unicodeset *self, PyObject *args)
         self->object->complement();
         break;
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UChar32 c0;
             int32_t l0;
@@ -723,7 +732,7 @@ static PyObject *t_unicodeset_complement(t_unicodeset *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -748,12 +757,12 @@ static PyObject *t_unicodeset_complementAll(t_unicodeset *self, PyObject *arg)
     UnicodeString *u, _u;
     UnicodeSet *set;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->complementAll(*u);
         Py_RETURN_SELF();
     }
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         self->object->complementAll(*set);
         Py_RETURN_SELF();
@@ -770,7 +779,7 @@ static PyObject *t_unicodeset_remove(t_unicodeset *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UChar32 c0;
             int32_t l0;
@@ -792,7 +801,7 @@ static PyObject *t_unicodeset_remove(t_unicodeset *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -817,12 +826,12 @@ static PyObject *t_unicodeset_removeAll(t_unicodeset *self, PyObject *arg)
     UnicodeString *u, _u;
     UnicodeSet *set;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->removeAll(*u);
         Py_RETURN_SELF();
     }
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         self->object->removeAll(*set);
         Py_RETURN_SELF();
@@ -837,7 +846,7 @@ static PyObject *t_unicodeset_applyPattern(t_unicodeset *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->applyPattern(*u, status));
         Py_RETURN_SELF();
@@ -851,9 +860,11 @@ static PyObject *t_unicodeset_applyIntPropertyValue(t_unicodeset *self,
                                                     PyObject *args)
 {
     UProperty prop;
-    int32_t value;
+    int value;
 
-    if (!parseArgs(args, "ii", &prop, &value))
+    if (!parseArgs(args,
+                   arg::Enum<UProperty>(&prop),
+                   arg::i(&value)))
     {
         STATUS_CALL(self->object->applyIntPropertyValue(prop, value, status));
         Py_RETURN_SELF();
@@ -869,7 +880,7 @@ static PyObject *t_unicodeset_applyPropertyAlias(t_unicodeset *self,
     UnicodeString *u0, *u1;
     UnicodeString _u0, _u1;
 
-    if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+    if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
     {
         STATUS_CALL(self->object->applyPropertyAlias(*u0, *u1, status));
         Py_RETURN_SELF();
@@ -886,7 +897,7 @@ static PyObject *t_unicodeset_contains(t_unicodeset *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UChar32 c0;
             int32_t l0;
@@ -908,7 +919,7 @@ static PyObject *t_unicodeset_contains(t_unicodeset *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -933,9 +944,9 @@ static PyObject *t_unicodeset_containsAll(t_unicodeset *self, PyObject *arg)
     UnicodeSet *set;
     UBool b;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
         b = self->object->containsAll(*u);
-    else if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    else if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
         b = self->object->containsAll(*set);
     else
         return PyErr_SetArgsError((PyObject *) self, "containsAll", arg);
@@ -951,19 +962,19 @@ static PyObject *t_unicodeset_containsNone(t_unicodeset *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UBool b = self->object->containsNone(*u0);
             Py_RETURN_BOOL(b);
         }
-        if (!parseArgs(args, "P", TYPE_CLASSID(UnicodeSet), &set))
+        if (!parseArgs(args, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
         {
             UBool b = self->object->containsNone(*u0);
             Py_RETURN_BOOL(b);
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -990,19 +1001,19 @@ static PyObject *t_unicodeset_containsSome(t_unicodeset *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             UBool b = self->object->containsSome(*u0);
             Py_RETURN_BOOL(b);
         }
-        if (!parseArgs(args, "P", TYPE_CLASSID(UnicodeSet), &set))
+        if (!parseArgs(args, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
         {
             UBool b = self->object->containsSome(*u0);
             Py_RETURN_BOOL(b);
         }
         break;
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             UChar32 c0, c1;
             int32_t l0, l1;
@@ -1027,7 +1038,9 @@ static PyObject *t_unicodeset_span(t_unicodeset *self, PyObject *args)
     USetSpanCondition spanCondition;
     int32_t length;
 
-    if (!parseArgs(args, "Si", &u, &_u, &spanCondition))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::Enum<USetSpanCondition>(&spanCondition)))
     {
         length = self->object->span(u->getBuffer(), u->length(), spanCondition);
         return PyInt_FromLong(length);
@@ -1042,7 +1055,9 @@ static PyObject *t_unicodeset_spanBack(t_unicodeset *self, PyObject *args)
     USetSpanCondition spanCondition;
     int length;
 
-    if (!parseArgs(args, "Si", &u, &_u, &spanCondition))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::Enum<USetSpanCondition>(&spanCondition)))
     {
         length = self->object->spanBack(u->getBuffer(), u->length(),
                                         spanCondition);
@@ -1070,9 +1085,9 @@ static PyObject *t_unicodeset_removeAllStrings(t_unicodeset *self)
 
 static PyObject *t_unicodeset_closeOver(t_unicodeset *self, PyObject *arg)
 {
-    int32_t attribute;
+    int attribute;
 
-    if (!parseArg(arg, "i", &attribute))
+    if (!parseArg(arg, arg::i(&attribute)))
     {
         self->object->closeOver(attribute);
         Py_RETURN_SELF();
@@ -1095,9 +1110,9 @@ static PyObject *t_unicodeset_getRangeCount(t_unicodeset *self)
 
 static PyObject *t_unicodeset_getRangeStart(t_unicodeset *self, PyObject *arg)
 {
-    int32_t index;
+    int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         UnicodeString u = UnicodeString(self->object->getRangeStart(index));
         return PyUnicode_FromUnicodeString(&u);
@@ -1108,9 +1123,9 @@ static PyObject *t_unicodeset_getRangeStart(t_unicodeset *self, PyObject *arg)
 
 static PyObject *t_unicodeset_getRangeEnd(t_unicodeset *self, PyObject *arg)
 {
-    int32_t index;
+    int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         UnicodeString u = UnicodeString(self->object->getRangeEnd(index));
         return PyUnicode_FromUnicodeString(&u);
@@ -1123,9 +1138,9 @@ static PyObject *t_unicodeset_resemblesPattern(PyTypeObject *type,
                                                PyObject *args)
 {
     UnicodeString *u, _u;
-    int32_t pos;
+    int pos;
 
-    if (!parseArgs(args, "Si", &u, &_u, &pos))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::i(&pos)))
     {
         UBool b = UnicodeSet::resemblesPattern(*u, pos);
         Py_RETURN_BOOL(b);
@@ -1138,7 +1153,7 @@ static PyObject *t_unicodeset_createFrom(PyTypeObject *type, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
         return wrap_UnicodeSet(UnicodeSet::createFrom(*u), T_OWNED);
 
     return PyErr_SetArgsError(type, "createFrom", arg);
@@ -1148,7 +1163,7 @@ static PyObject *t_unicodeset_createFromAll(PyTypeObject *type, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
         return wrap_UnicodeSet(UnicodeSet::createFromAll(*u), T_OWNED);
 
     return PyErr_SetArgsError(type, "createFromAll", arg);
@@ -1163,7 +1178,7 @@ static PyObject *t_unicodeset_str(t_unicodeset *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(UnicodeSet, t_unicodeset)
+DEFINE_RICHCMP__ARG__(UnicodeSet, t_unicodeset)
 
 static PyObject *t_unicodeset_iter(t_unicodeset *self)
 {
@@ -1186,7 +1201,7 @@ static int _t_unicodeset_contains(t_unicodeset *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UChar32 c;
         int32_t l;
@@ -1249,7 +1264,8 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "p", TYPE_CLASSID(UnicodeSet), &set, &self->set))
+        if (!parseArgs(args, arg::p<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set,
+                                                &self->set)))
         {
             self->object = new UnicodeSetIterator(*set);
             self->flags = T_OWNED;
@@ -1318,7 +1334,7 @@ static PyObject *t_unicodesetiterator_reset(t_unicodesetiterator *self,
         self->object->reset();
         Py_RETURN_NONE;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(UnicodeSet), &set))
+        if (!parseArgs(args, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
         {
             PyObject *setObject = PyTuple_GetItem(args, 0);
 
