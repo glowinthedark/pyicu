@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2010 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,8 @@
 #include "iterators.h"
 #include "search.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(USearchAttribute)
 DECLARE_CONSTANTS_TYPE(USearchAttributeValue)
@@ -162,9 +164,9 @@ static PyObject *t_searchiterator_getOffset(t_searchiterator *self)
 static PyObject *t_searchiterator_setOffset(t_searchiterator *self,
                                             PyObject *arg)
 {
-    int32_t offset;
+    int offset;
 
-    if (!parseArg(arg, "i", &offset))
+    if (!parseArg(arg, arg::i(&offset)))
     {
         STATUS_CALL(self->object->setOffset(offset, status));
         Py_RETURN_NONE;
@@ -178,7 +180,7 @@ static PyObject *t_searchiterator_getAttribute(t_searchiterator *self,
 {
     USearchAttribute attribute;
 
-    if (!parseArg(arg, "i", &attribute))
+    if (!parseArg(arg, arg::Enum<USearchAttribute>(&attribute)))
     {
         USearchAttributeValue value = self->object->getAttribute(attribute);
         return PyInt_FromLong(value);
@@ -193,7 +195,9 @@ static PyObject *t_searchiterator_setAttribute(t_searchiterator *self,
     USearchAttribute attribute;
     USearchAttributeValue value;
 
-    if (!parseArgs(args, "ii", &attribute, &value))
+    if (!parseArgs(args,
+                   arg::Enum<USearchAttribute>(&attribute),
+                   arg::Enum<USearchAttributeValue>(&value)))
     {
         STATUS_CALL(self->object->setAttribute(attribute, value, status));
         Py_RETURN_NONE;
@@ -224,7 +228,7 @@ static PyObject *t_searchiterator_getMatchedText(t_searchiterator *self,
         self->object->getMatchedText(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getMatchedText(*u);
             Py_RETURN_ARG(args, 0);
@@ -257,7 +261,8 @@ static PyObject *t_searchiterator_setBreakIterator(t_searchiterator *self,
         Py_XDECREF(self->iterator); self->iterator = NULL;
         Py_RETURN_NONE;
     }
-    if (!parseArg(arg, "p", TYPE_ID(BreakIterator), &iterator, &self->iterator))
+    if (!parseArg(arg, arg::p<BreakIterator>(TYPE_ID(BreakIterator), &iterator,
+                                             &self->iterator)))
     {
         /* ref'd */
         STATUS_CALL(self->object->setBreakIterator(iterator, status));
@@ -279,7 +284,7 @@ static PyObject *t_searchiterator_getText(t_searchiterator *self,
       case 1:
       {
           UnicodeString *u;
-          if (!parseArgs(args, "U", &u))
+          if (!parseArgs(args, arg::U(&u)))
           {
               u->setTo(self->object->getText());
               Py_RETURN_ARG(args, 0);
@@ -296,12 +301,12 @@ static PyObject *t_searchiterator_setText(t_searchiterator *self, PyObject *arg)
     UnicodeString *u;
     CharacterIterator *chars;
 
-    if (!parseArg(arg, "W", &u, &self->text))
+    if (!parseArg(arg, arg::W(&u, &self->text)))
     {
         STATUS_CALL(self->object->setText(*u, status)); /* ref'd */
         Py_RETURN_NONE;
     }
-    else if (!parseArg(arg, "P", TYPE_ID(CharacterIterator), &chars))
+    else if (!parseArg(arg, arg::P<CharacterIterator>(TYPE_ID(CharacterIterator), &chars)))
     {
         STATUS_CALL(self->object->setText(*chars, status)); /* copied */
         Py_RETURN_NONE;
@@ -337,9 +342,9 @@ static PyObject *t_searchiterator_nextMatch(t_searchiterator *self)
 static PyObject *t_searchiterator_following(t_searchiterator *self,
                                             PyObject *arg)
 {
-    int32_t position, following;
+    int position, following;
 
-    if (!parseArg(arg, "i", &position))
+    if (!parseArg(arg, arg::i(&position)))
     {
         STATUS_CALL(following = self->object->following(position, status));
         return PyInt_FromLong(following);
@@ -351,9 +356,9 @@ static PyObject *t_searchiterator_following(t_searchiterator *self,
 static PyObject *t_searchiterator_preceding(t_searchiterator *self,
                                             PyObject *arg)
 {
-    int32_t position, preceding;
+    int position, preceding;
 
-    if (!parseArg(arg, "i", &position))
+    if (!parseArg(arg, arg::i(&position)))
     {
         STATUS_CALL(preceding = self->object->preceding(position, status));
         return PyInt_FromLong(preceding);
@@ -403,29 +408,30 @@ static int t_stringsearch_init(t_stringsearch *self,
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "SWP",
-                       TYPE_CLASSID(Locale),
-                       &u0, &_u0, &u1, &self->text, &locale))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::W(&u1, &self->text),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(self->object = new StringSearch(*u0, *u1, *locale,
                                                             NULL, status));
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "SWp",
-                       TYPE_CLASSID(RuleBasedCollator),
-                       &u0, &_u0, &u1, &self->text,
-                       &collator, &self->collator))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::W(&u1, &self->text),
+                       arg::p<RuleBasedCollator>(TYPE_CLASSID(RuleBasedCollator), &collator, &self->collator)))
         {
             INT_STATUS_CALL(self->object = new StringSearch(*u0, *u1, collator,
                                                             NULL, status));
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "SpP",
-                       TYPE_ID(CharacterIterator),
-                       TYPE_CLASSID(Locale),
-                       &u0, &_u0, &chars, &self->text, &locale))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::p<CharacterIterator>(TYPE_ID(CharacterIterator), &chars, &self->text),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             INT_STATUS_CALL(self->object =
                             new StringSearch(*u0, *chars, *locale,
@@ -433,11 +439,10 @@ static int t_stringsearch_init(t_stringsearch *self,
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "Spp",
-                       TYPE_ID(CharacterIterator),
-                       TYPE_CLASSID(RuleBasedCollator),
-                       &u0, &_u0, &chars, &self->text,
-                       &collator, &self->collator))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::p<CharacterIterator>(TYPE_ID(CharacterIterator), &chars, &self->text),
+                       arg::p<RuleBasedCollator>(TYPE_CLASSID(RuleBasedCollator), &collator, &self->collator)))
         {
             INT_STATUS_CALL(self->object =
                             new StringSearch(*u0, *chars, collator,
@@ -448,35 +453,33 @@ static int t_stringsearch_init(t_stringsearch *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 4:
-        if (!parseArgs(args, "SWPp",
-                       TYPE_CLASSID(Locale),
-                       TYPE_ID(BreakIterator),
-                       &u0, &_u0, &u1, &self->text,
-                       &locale, &iterator, &self->iterator))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::W(&u1, &self->text),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::p<BreakIterator>(TYPE_ID(BreakIterator), &iterator, &self->iterator)))
         {
             INT_STATUS_CALL(self->object = new StringSearch(*u0, *u1, *locale,
                                                             iterator, status));
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "SWpp",
-                       TYPE_CLASSID(RuleBasedCollator),
-                       TYPE_ID(BreakIterator),
-                       &u0, &_u0, &u1, &self->text,
-                       &collator, &self->collator,
-                       &iterator, &self->iterator))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::W(&u1, &self->text),
+                       arg::p<RuleBasedCollator>(TYPE_CLASSID(RuleBasedCollator), &collator, &self->collator),
+                       arg::p<BreakIterator>(TYPE_ID(BreakIterator), &iterator, &self->iterator)))
         {
             INT_STATUS_CALL(self->object = new StringSearch(*u0, *u1, collator,
                                                             NULL, status));
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "SpPp",
-                       TYPE_ID(CharacterIterator),
-                       TYPE_CLASSID(Locale),
-                       TYPE_ID(BreakIterator),
-                       &u0, &_u0, &chars, &self->text, &locale,
-                       &iterator, &self->iterator))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::p<CharacterIterator>(TYPE_ID(CharacterIterator), &chars, &self->text),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::p<BreakIterator>(TYPE_ID(BreakIterator), &iterator, &self->iterator)))
         {
             INT_STATUS_CALL(self->object =
                             new StringSearch(*u0, *chars, *locale,
@@ -484,13 +487,11 @@ static int t_stringsearch_init(t_stringsearch *self,
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "Sppp",
-                       TYPE_ID(CharacterIterator),
-                       TYPE_CLASSID(RuleBasedCollator),
-                       TYPE_ID(BreakIterator),
-                       &u0, &_u0, &chars, &self->text,
-                       &collator, &self->collator,
-                       &iterator, &self->iterator))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::p<CharacterIterator>(TYPE_ID(CharacterIterator), &chars, &self->text),
+                       arg::p<RuleBasedCollator>(TYPE_CLASSID(RuleBasedCollator), &collator, &self->collator),
+                       arg::p<BreakIterator>(TYPE_ID(BreakIterator), &iterator, &self->iterator)))
         {
             INT_STATUS_CALL(self->object =
                             new StringSearch(*u0, *chars, collator,
@@ -527,8 +528,7 @@ static PyObject *t_stringsearch_setCollator(t_stringsearch *self,
 {
     RuleBasedCollator *collator;
 
-    if (!parseArg(arg, "p", TYPE_CLASSID(RuleBasedCollator),
-                  &collator, &self->collator))
+    if (!parseArg(arg, arg::p<RuleBasedCollator>(TYPE_CLASSID(RuleBasedCollator), &collator, &self->collator)))
     {
         STATUS_CALL(self->object->setCollator(collator, status)); /* ref'd */
         Py_RETURN_NONE;
@@ -548,7 +548,7 @@ static PyObject *t_stringsearch_getPattern(t_stringsearch *self, PyObject *args)
       case 1:
       {
           UnicodeString *u;
-          if (!parseArgs(args, "U", &u))
+          if (!parseArgs(args, arg::U(&u)))
           {
               *u = self->object->getPattern();
               Py_RETURN_ARG(args, 0);
@@ -564,7 +564,7 @@ static PyObject *t_stringsearch_setPattern(t_stringsearch *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->setPattern(*u, status)); /* copied */
         Py_RETURN_NONE;
@@ -579,7 +579,7 @@ static PyObject *t_stringsearch_str(t_stringsearch *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(StringSearch, t_stringsearch)
+DEFINE_RICHCMP__ARG__(StringSearch, t_stringsearch)
 
 
 void _init_search(PyObject *m)
