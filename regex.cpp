@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2010-2019 Open Source Applications Foundation.
+ * Copyright (c) 2010-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,6 +27,8 @@
 #include "bases.h"
 #include "regex.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(URegexpFlag)
 
@@ -210,7 +212,7 @@ static int t_regexpattern_init(t_regexpattern *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(RegexPattern), &pattern))
+        if (!parseArgs(args, arg::P<RegexPattern>(TYPE_CLASSID(RegexPattern), &pattern)))
         {
             self->object = new RegexPattern(*pattern);
             self->flags = T_OWNED;
@@ -241,7 +243,7 @@ static PyObject *t_regexpattern_matcher(t_regexpattern *self, PyObject *args)
         STATUS_CALL(matcher = self->object->matcher(status));
         return wrap_RegexMatcher(matcher, (PyObject *) self, input);
       case 1:
-        if (!parseArgs(args, "W", &u, &input))
+        if (!parseArgs(args, arg::W(&u, &input)))
         {
             UErrorCode status = U_ZERO_ERROR;
 
@@ -277,7 +279,7 @@ static PyObject *t_regexpattern_split(t_regexpattern *self, PyObject *args)
     UnicodeString *u, _u;
     int capacity, count;
 
-    if (!parseArgs(args, "Si", &u, &_u, &capacity))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::i(&capacity)))
     {
         if (capacity < 32)
         {
@@ -327,13 +329,13 @@ static PyObject *t_regexpattern_split(t_regexpattern *self, PyObject *args)
 static PyObject *t_regexpattern_compile(PyTypeObject *type, PyObject *args)
 {
     UnicodeString *u;
-    uint32_t flags;
+    int flags;
     RegexPattern *pattern;
     PyObject *re = NULL;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "W", &u, &re))
+        if (!parseArgs(args, arg::W(&u, &re)))
         {
             UErrorCode status = U_ZERO_ERROR;
             UParseError parseError;
@@ -348,7 +350,7 @@ static PyObject *t_regexpattern_compile(PyTypeObject *type, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "Wi", &u, &re, &flags))
+        if (!parseArgs(args, arg::W(&u, &re), arg::i(&flags)))
         {
             UErrorCode status = U_ZERO_ERROR;
             UParseError parseError;
@@ -375,7 +377,7 @@ static PyObject *t_regexpattern_matches(PyTypeObject *type, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             STATUS_PARSER_CALL(b = RegexPattern::matches(*u0, *u1, parseError,
                                                          status));
@@ -393,7 +395,7 @@ static PyObject *t_regexpattern_str(t_regexpattern *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(RegexPattern, t_regexpattern)
+DEFINE_RICHCMP__ARG__(RegexPattern, t_regexpattern)
 
 
 /* RegexMatcher */
@@ -403,11 +405,11 @@ static int t_regexmatcher_init(t_regexmatcher *self,
 {
     RegexMatcher *matcher;
     UnicodeString *u0, *u1;
-    uint32_t flags;
+    int flags;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "W", &u0, &self->re))
+        if (!parseArgs(args, arg::W(&u0, &self->re)))
         {
             INT_STATUS_CALL(matcher = new RegexMatcher(*u0, 0, status));
             self->object = matcher;
@@ -419,7 +421,7 @@ static int t_regexmatcher_init(t_regexmatcher *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "Wi", &u0, &self->re, &flags))
+        if (!parseArgs(args, arg::W(&u0, &self->re), arg::i(&flags)))
         {
             INT_STATUS_CALL(matcher = new RegexMatcher(*u0, flags, status));
             self->object = matcher;
@@ -431,7 +433,10 @@ static int t_regexmatcher_init(t_regexmatcher *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 3:
-        if (!parseArgs(args, "WWi", &u0, &self->re, &u1, &self->input, &flags))
+        if (!parseArgs(args,
+                       arg::W(&u0, &self->re),
+                       arg::W(&u1, &self->input),
+                       arg::i(&flags)))
         {
             INT_STATUS_CALL(matcher = new RegexMatcher(*u0, *u1, flags,
                                                        status));
@@ -470,7 +475,7 @@ static PyObject *wrap_RegexMatcher(RegexMatcher *matcher, PyObject *pattern,
 
 static PyObject *t_regexmatcher_matches(t_regexmatcher *self, PyObject *args)
 {
-    int32_t startIndex;
+    int startIndex;
     UBool b;
 
     switch (PyTuple_Size(args)) {
@@ -478,7 +483,7 @@ static PyObject *t_regexmatcher_matches(t_regexmatcher *self, PyObject *args)
         STATUS_CALL(b = self->object->matches(status));
         Py_RETURN_BOOL(b);
       case 1:
-        if (!parseArgs(args, "i", &startIndex))
+        if (!parseArgs(args, arg::i(&startIndex)))
         {
             STATUS_CALL(b = self->object->matches(startIndex, status));
             Py_RETURN_BOOL(b);
@@ -490,7 +495,7 @@ static PyObject *t_regexmatcher_matches(t_regexmatcher *self, PyObject *args)
 
 static PyObject *t_regexmatcher_lookingAt(t_regexmatcher *self, PyObject *args)
 {
-    int32_t startIndex;
+    int startIndex;
     UBool b;
 
     switch (PyTuple_Size(args)) {
@@ -498,7 +503,7 @@ static PyObject *t_regexmatcher_lookingAt(t_regexmatcher *self, PyObject *args)
         STATUS_CALL(b = self->object->lookingAt(status));
         Py_RETURN_BOOL(b);
       case 1:
-        if (!parseArgs(args, "i", &startIndex))
+        if (!parseArgs(args, arg::i(&startIndex)))
         {
             STATUS_CALL(b = self->object->lookingAt(startIndex, status));
             Py_RETURN_BOOL(b);
@@ -510,7 +515,7 @@ static PyObject *t_regexmatcher_lookingAt(t_regexmatcher *self, PyObject *args)
 
 static PyObject *t_regexmatcher_find(t_regexmatcher *self, PyObject *args)
 {
-    int32_t startIndex;
+    int startIndex;
     UBool b;
 
     switch (PyTuple_Size(args)) {
@@ -518,7 +523,7 @@ static PyObject *t_regexmatcher_find(t_regexmatcher *self, PyObject *args)
         b = self->object->find();
         Py_RETURN_BOOL(b);
       case 1:
-        if (!parseArgs(args, "i", &startIndex))
+        if (!parseArgs(args, arg::i(&startIndex)))
         {
             STATUS_CALL(b = self->object->find(startIndex, status));
             Py_RETURN_BOOL(b);
@@ -537,14 +542,14 @@ static PyObject *t_regexmatcher_pattern(t_regexmatcher *self)
 static PyObject *t_regexmatcher_group(t_regexmatcher *self, PyObject *args)
 {
     UnicodeString u;
-    int32_t groupNum;
+    int groupNum;
 
     switch (PyTuple_Size(args)) {
       case 0:
         STATUS_CALL(u = self->object->group(status));
         return PyUnicode_FromUnicodeString(&u);
       case 1:
-        if (!parseArgs(args, "i", &groupNum))
+        if (!parseArgs(args, arg::i(&groupNum)))
         {
             STATUS_CALL(u = self->object->group(groupNum, status));
             return PyUnicode_FromUnicodeString(&u);
@@ -563,14 +568,14 @@ static PyObject *t_regexmatcher_groupCount(t_regexmatcher *self)
 
 static PyObject *t_regexmatcher_start(t_regexmatcher *self, PyObject *args)
 {
-    int32_t index, groupNum;
+    int index, groupNum;
 
     switch (PyTuple_Size(args)) {
       case 0:
         STATUS_CALL(index = self->object->start(status));
         return PyInt_FromLong(index);
       case 1:
-        if (!parseArgs(args, "i", &groupNum))
+        if (!parseArgs(args, arg::i(&groupNum)))
         {
             STATUS_CALL(index = self->object->start(groupNum, status));
             return PyInt_FromLong(index);
@@ -583,14 +588,14 @@ static PyObject *t_regexmatcher_start(t_regexmatcher *self, PyObject *args)
 
 static PyObject *t_regexmatcher_end(t_regexmatcher *self, PyObject *args)
 {
-    int32_t index, groupNum;
+    int index, groupNum;
 
     switch (PyTuple_Size(args)) {
       case 0:
         STATUS_CALL(index = self->object->end(status));
         return PyInt_FromLong(index);
       case 1:
-        if (!parseArgs(args, "i", &groupNum))
+        if (!parseArgs(args, arg::i(&groupNum)))
         {
             STATUS_CALL(index = self->object->end(groupNum, status));
             return PyInt_FromLong(index);
@@ -603,7 +608,7 @@ static PyObject *t_regexmatcher_end(t_regexmatcher *self, PyObject *args)
 
 static PyObject *t_regexmatcher_reset(t_regexmatcher *self, PyObject *args)
 {
-    int32_t index;
+    int index;
     UnicodeString *u;
 
     switch (PyTuple_Size(args)) {
@@ -611,12 +616,12 @@ static PyObject *t_regexmatcher_reset(t_regexmatcher *self, PyObject *args)
         self->object->reset();
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "i", &index))
+        if (!parseArgs(args, arg::i(&index)))
         {
             STATUS_CALL(self->object->reset(index, status));
             Py_RETURN_SELF();
         }
-        if (!parseArgs(args, "W", &u, &self->input))
+        if (!parseArgs(args, arg::W(&u, &self->input)))
         {
             self->object->reset(*u);
             Py_RETURN_SELF();
@@ -637,9 +642,9 @@ static PyObject *t_regexmatcher_input(t_regexmatcher *self)
 
 static PyObject *t_regexmatcher_region(t_regexmatcher *self, PyObject *args)
 {
-    int32_t start, end;
+    int start, end;
 
-    if (!parseArgs(args, "ii", &start, &end))
+    if (!parseArgs(args, arg::i(&start), arg::i(&end)))
     {
         STATUS_CALL(self->object->region(start, end, status));
         Py_RETURN_SELF();
@@ -669,9 +674,9 @@ static PyObject *t_regexmatcher_hasTransparentBounds(t_regexmatcher *self)
 static PyObject *t_regexmatcher_useTransparentBounds(t_regexmatcher *self,
                                                      PyObject *arg)
 {
-    int b;
+    UBool b;
 
-    if (!parseArg(arg, "B", &b))
+    if (!parseArg(arg, arg::B(&b)))
     {
         self->object->useTransparentBounds(b);
         Py_RETURN_SELF();
@@ -689,9 +694,9 @@ static PyObject *t_regexmatcher_hasAnchoringBounds(t_regexmatcher *self)
 static PyObject *t_regexmatcher_useAnchoringBounds(t_regexmatcher *self,
                                                    PyObject *arg)
 {
-    int b;
+    UBool b;
 
-    if (!parseArg(arg, "B", &b))
+    if (!parseArg(arg, arg::B(&b)))
     {
         self->object->useAnchoringBounds(b);
         Py_RETURN_SELF();
@@ -718,7 +723,7 @@ static PyObject *t_regexmatcher_replaceAll(t_regexmatcher *self, PyObject *arg)
 {
     UnicodeString *u, _u, result;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(result = self->object->replaceAll(*u, status));
         return PyUnicode_FromUnicodeString(&result);
@@ -732,7 +737,7 @@ static PyObject *t_regexmatcher_replaceFirst(t_regexmatcher *self,
 {
     UnicodeString *u, _u, result;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(result = self->object->replaceFirst(*u, status));
         return PyUnicode_FromUnicodeString(&result);
@@ -747,7 +752,7 @@ static PyObject *t_regexmatcher_appendReplacement(t_regexmatcher *self,
     UnicodeString *u0, _u0;
     UnicodeString *u1, _u1;
 
-    if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+    if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
     {
         STATUS_CALL(self->object->appendReplacement(*u0, *u1, status));
         Py_RETURN_SELF();
@@ -760,7 +765,7 @@ static PyObject *t_regexmatcher_appendTail(t_regexmatcher *self, PyObject *arg)
 {
     UnicodeString *u, _u, result;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         result = self->object->appendTail(*u);
         return PyUnicode_FromUnicodeString(&result);
@@ -774,7 +779,7 @@ static PyObject *t_regexmatcher_split(t_regexmatcher *self, PyObject *args)
     UnicodeString *u, _u;
     int capacity, count;
 
-    if (!parseArgs(args, "Si", &u, &_u, &capacity))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::i(&capacity)))
     {
         if (capacity < 32)
         {
@@ -826,9 +831,9 @@ static PyObject *t_regexmatcher_split(t_regexmatcher *self, PyObject *args)
 static PyObject *t_regexmatcher_setTimeLimit(t_regexmatcher *self,
                                              PyObject *arg)
 {
-    int32_t limit;
+    int limit;
 
-    if (!parseArg(arg, "i", &limit))
+    if (!parseArg(arg, arg::i(&limit)))
     {
         STATUS_CALL(self->object->setTimeLimit(limit, status));
         Py_RETURN_NONE;
@@ -846,9 +851,9 @@ static PyObject *t_regexmatcher_getTimeLimit(t_regexmatcher *self)
 static PyObject *t_regexmatcher_setStackLimit(t_regexmatcher *self,
                                              PyObject *arg)
 {
-    int32_t limit;
+    int limit;
 
-    if (!parseArg(arg, "i", &limit))
+    if (!parseArg(arg, arg::i(&limit)))
     {
         STATUS_CALL(self->object->setStackLimit(limit, status));
         Py_RETURN_NONE;
