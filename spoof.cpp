@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2014-2014 Open Source Applications Foundation.
+ * Copyright (c) 2014-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,8 @@
 #include "unicodeset.h"
 #include "spoof.h"
 #include "macros.h"
+
+#include "arg.h"
 
 #if U_ICU_VERSION_HEX >= 0x04020000
 
@@ -110,7 +112,7 @@ static int t_spoofchecker_init(t_spoofchecker *self,
                                PyObject *args, PyObject *kwds)
 {
     USpoofChecker *usc = NULL;
-    t_spoofchecker *sc = NULL;
+    PyObject *sc = NULL;
 
     switch (PyTuple_Size(args)) {
       case 0:
@@ -119,9 +121,9 @@ static int t_spoofchecker_init(t_spoofchecker *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "O", &SpoofCheckerType_, &sc))
+        if (!parseArgs(args, arg::O(&SpoofCheckerType_, &sc)))
         {
-            INT_STATUS_CALL(usc = uspoof_clone(sc->object, &status));
+            INT_STATUS_CALL(usc = uspoof_clone(((t_spoofchecker *) sc)->object, &status));
             self->object = usc;
             self->flags = T_OWNED;
             break;
@@ -163,7 +165,7 @@ static PyObject *t_spoofchecker_setAllowedLocales(t_spoofchecker *self,
 {
     char *localesList;
 
-    if (!parseArg(arg, "c", &localesList))
+    if (!parseArg(arg, arg::c(&localesList)))
     {
         STATUS_CALL(uspoof_setAllowedLocales(self->object, localesList,
                                              &status));
@@ -185,9 +187,9 @@ static PyObject *t_spoofchecker_getAllowedLocales(t_spoofchecker *self)
 static PyObject *t_spoofchecker_setAllowedUnicodeSet(t_spoofchecker *self,
                                                      PyObject *arg)
 {
-    const UnicodeSet *set;
+    UnicodeSet *set;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(UnicodeSet), &set))
+    if (!parseArg(arg, arg::P<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set)))
     {
         STATUS_CALL(uspoof_setAllowedUnicodeSet(self->object, set, &status));
         Py_RETURN_NONE;
@@ -209,7 +211,7 @@ static PyObject *t_spoofchecker_check(t_spoofchecker *self, PyObject *arg)
     UnicodeString *u, _u;
     int32_t checks;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(checks = uspoof_check(self->object, u->getBuffer(),
                                           u->length(), NULL, &status));
@@ -228,7 +230,7 @@ static PyObject *t_spoofchecker_areConfusable(t_spoofchecker *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SS", &u0, &_u0, &u1, &_u1))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::S(&u1, &_u1)))
         {
             STATUS_CALL(checks = uspoof_areConfusable(
                             self->object, u0->getBuffer(), u0->length(),
@@ -244,11 +246,11 @@ static PyObject *t_spoofchecker_getSkeleton(t_spoofchecker *self,
                                             PyObject *args)
 {
     UnicodeString *u, _u;
-    int32_t type;
+    int type;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "iS", &type, &u, &_u))
+        if (!parseArgs(args, arg::i(&type), arg::S(&u, &_u)))
         {
             const int32_t len = u->length();
             Buffer dest(len + 32);
@@ -331,7 +333,9 @@ static PyObject *t_spoofchecker_getBidiSkeleton(t_spoofchecker *self, PyObject *
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "iS", &direction, &id, &_id))
+        if (!parseArgs(args,
+                       arg::Enum<UBiDiDirection>(&direction),
+                       arg::S(&id, &_id)))
         {
             UErrorCode status = U_ZERO_ERROR;
             UnicodeString dest;
@@ -354,7 +358,10 @@ static PyObject *t_spoofchecker_areBidiConfusable(t_spoofchecker *self, PyObject
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "iSS", &direction, &s1, &_s1, &s2, &_s2))
+        if (!parseArgs(args,
+                       arg::Enum<UBiDiDirection>(&direction),
+                       arg::S(&s1, &_s1),
+                       arg::S(&s2, &_s2)))
         {
             UErrorCode status = U_ZERO_ERROR;
             uint32_t result = uspoof_areBidiConfusableUnicodeString(self->object, direction, *s1, *s2, &status);
