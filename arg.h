@@ -650,6 +650,31 @@ public:
     }
 };
 
+class UnicodeStringNew {
+private:
+    UnicodeString **const u;
+
+public:
+    UnicodeStringNew() = delete;
+
+    explicit UnicodeStringNew(UnicodeString **param) noexcept : u(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!(PyBytes_Check(arg) || PyUnicode_Check(arg)))
+            return -1;
+
+        try {
+            *u = PyObject_AsUnicodeString(arg);
+        } catch (ICUException e) {
+            e.reportError();
+            return -1;
+        }
+
+        return 0;
+    }
+};
+
 class UnicodeStringRef {
 private:
     UnicodeString *const u;
@@ -814,6 +839,7 @@ _IS_POD(StringOrUnicodeToUtf8CharsArgArray);
 _IS_POD(UnicodeStringAndPythonObject);
 _IS_POD(UnicodeStringArg);
 _IS_POD(UnicodeStringArray);
+_IS_POD(UnicodeStringNew);
 _IS_POD(UnicodeStringRef);
 
 #undef _IS_POD
@@ -847,6 +873,7 @@ using S = String;
 using s = UnicodeStringRef;
 using T = UnicodeStringArray;
 using U = UnicodeStringArg;
+using u = UnicodeStringNew;
 using V = UnicodeStringAndPythonObject;
 using W = SavedString;
 

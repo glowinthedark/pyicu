@@ -29,6 +29,8 @@
 #include "iterators.h"
 #include "macros.h"
 
+#include "arg.h"
+
 /* UMemory */
 
 static PyObject *t_umemory_new(PyTypeObject *type,
@@ -254,7 +256,7 @@ int32_t PythonReplaceable::getLength() const
 
     UnicodeString *u, _u;
 
-    if (!parseArg(result, "S", &u, &_u) && u->length() == 1)
+    if (!parseArg(result, arg::S(&u, &_u)) && u->length() == 1)
     {
         Py_DECREF(result);
         return u->charAt(0);
@@ -300,7 +302,7 @@ UChar32 PythonReplaceable::getChar32At(int32_t offset) const
 
     UnicodeString *u, _u;
 
-    if (!parseArg(result, "S", &u, &_u) && u->countChar32() == 1)
+    if (!parseArg(result, arg::S(&u, &_u)) && u->countChar32() == 1)
     {
         Py_DECREF(result);
         return u->char32At(0);
@@ -319,7 +321,7 @@ void PythonReplaceable::extractBetween(
         self_, (char *) "extractBetween", (char *) "ii", start, limit);
     UnicodeString *u, _u;
 
-    if (result != NULL && !parseArg(result, "S", &u, &_u))
+    if (result != NULL && !parseArg(result, arg::S(&u, &_u)))
     {
         target.setTo(*u);
         Py_DECREF(result);
@@ -681,9 +683,9 @@ static PyObject *t_replaceable_length(t_replaceable *self)
 
 static PyObject *t_replaceable_charAt(t_replaceable *self, PyObject *arg)
 {
-    int32_t i;
+    int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         if (i >= 0 && self->object->length())
             return PyInt_FromLong(self->object->charAt(i));
@@ -699,9 +701,9 @@ static PyObject *t_replaceable_charAt(t_replaceable *self, PyObject *arg)
 
 static PyObject *t_replaceable_char32At(t_replaceable *self, PyObject *arg)
 {
-    int32_t i;
+    int i;
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         if (i >= 0 && self->object->length())
             return PyInt_FromLong(self->object->char32At(i));
@@ -733,7 +735,7 @@ static int t_python_replaceable_init(
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "K", &object))
+        if (!parseArgs(args, arg::K(&object)))
         {
             self->object = new PythonReplaceable(object);
             self->flags = T_OWNED;
@@ -760,7 +762,7 @@ static PyObject *t_python_replaceable_extractBetween(
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "ii", &start, &limit))
+        if (!parseArgs(args, arg::i(&start), arg::i(&limit)))
         {
             UnicodeString result;
             self->object->extractBetween(start, limit, result);
@@ -781,7 +783,7 @@ static PyObject *t_python_replaceable_handleReplaceBetween(
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "iiS", &start, &limit, &u, &_u))
+        if (!parseArgs(args, arg::i(&start), arg::i(&limit), arg::S(&u, &_u)))
         {
             self->object->handleReplaceBetween(start, limit, *u);
             Py_RETURN_NONE;
@@ -799,7 +801,7 @@ static PyObject *t_python_replaceable_copy(
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "iii", &start, &limit, &dest))
+        if (!parseArgs(args, arg::i(&start), arg::i(&limit), arg::i(&dest)))
         {
             self->object->copy(start, limit, dest);
             Py_RETURN_NONE;
@@ -836,19 +838,19 @@ static int t_unicodestring_init(t_unicodestring *self,
         break;
 
       case 1:
-        if (!parseArgs(args, "u", &u))
+        if (!parseArgs(args, arg::u(&u)))
         {
             self->object = u;
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object = new UnicodeString(*u);
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "i", &i))
+        if (!parseArgs(args, arg::i(&i)))
         {
             self->object = new UnicodeString((UChar32) i);
             self->flags = T_OWNED;
@@ -858,7 +860,7 @@ static int t_unicodestring_init(t_unicodestring *self,
         return -1;
 
       case 2:
-        if (!parseArgs(args, "Cn", &obj, &encoding))
+        if (!parseArgs(args, arg::C(&obj), arg::n(&encoding)))
         {
             UnicodeString u;
 
@@ -872,7 +874,7 @@ static int t_unicodestring_init(t_unicodestring *self,
             }
             break;
         }
-        if (!parseArgs(args, "Si", &u, &_u, &start))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start)))
         {
             self->object = new UnicodeString(*u, start);
             self->flags = T_OWNED;
@@ -882,7 +884,9 @@ static int t_unicodestring_init(t_unicodestring *self,
         return -1;
 
       case 3:
-        if (!parseArgs(args, "Cnn", &obj, &encoding, &mode))
+        if (!parseArgs(args,
+                       arg::C(&obj),
+                       arg::n(&encoding), arg::n(&mode)))
         {
             try {
                 PyObject_AsUnicodeString(obj, encoding, mode, _u);
@@ -894,7 +898,7 @@ static int t_unicodestring_init(t_unicodestring *self,
             }
             break;
         }
-        if (!parseArgs(args, "Sii", &u, &_u, &start, &length))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start), arg::i(&length)))
         {
             self->object = new UnicodeString(*u, start, length);
             self->flags = T_OWNED;
@@ -937,7 +941,7 @@ static PyObject *t_unicodestring_getAvailableEncodings(PyTypeObject *type,
       case 0:
         break;
       case 1:
-        if (!parseArgs(args, "n", &standard))
+        if (!parseArgs(args, arg::n(&standard)))
             break;
       default:
         return PyErr_SetArgsError(type, "getAvailableEncodings", args);
@@ -967,7 +971,7 @@ static PyObject *t_unicodestring_getStandardEncoding(PyTypeObject *type,
 {
     charsArg name, standard;
 
-    if (!parseArgs(args, "nn", &name, &standard))
+    if (!parseArgs(args, arg::n(&name), arg::n(&standard)))
     {
         UErrorCode status = U_ZERO_ERROR;
         const char *standardName =
@@ -1041,14 +1045,14 @@ static PyObject *t_unicodestring_append(t_unicodestring *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             self->object->append(*u);
 
             Py_INCREF(self);
             return (PyObject *) self;
         }
-        if (!parseArgs(args, "i", &i))
+        if (!parseArgs(args, arg::i(&i)))
         {
 #if PY_VERSION_HEX < 0x030d0000
             if (sizeof(Py_UNICODE) == sizeof(UChar))
@@ -1064,7 +1068,7 @@ static PyObject *t_unicodestring_append(t_unicodestring *self, PyObject *args)
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &start, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, u->length()))
             {
@@ -1089,14 +1093,14 @@ static PyObject *t_unicodestring_compare(t_unicodestring *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             int c = self->object->compare(*u);
             return PyInt_FromLong(c);
         }
         break;
       case 3:
-        if (!parseArgs(args, "iiS", &start, &len, &u, &_u))
+        if (!parseArgs(args, arg::i(&start), arg::i(&len), arg::S(&u, &_u)))
         {
             if (!verifyStartLen(start, len, u->length()))
             {
@@ -1119,7 +1123,10 @@ static PyObject *t_unicodestring_compareBetween(t_unicodestring *self,
     UnicodeString _u;
     int start, end, srcStart, srcEnd;
 
-    if (!parseArgs(args, "iiSii", &start, &end, &u, &_u, &srcStart, &srcEnd))
+    if (!parseArgs(args,
+                   arg::i(&start), arg::i(&end),
+                   arg::S(&u, &_u),
+                   arg::i(&srcStart), arg::i(&srcEnd)))
     {
         if (!verifyStartEnd(start, end, self->object->length()) &&
             !verifyStartEnd(srcStart, srcEnd, u->length()))
@@ -1144,14 +1151,14 @@ static PyObject *t_unicodestring_compareCodePointOrder(t_unicodestring *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             int c = self->object->compareCodePointOrder(*u);
             return PyInt_FromLong(c);
         }
         break;
       case 3:
-        if (!parseArgs(args, "iiS", &start, &len, &u, &_u))
+        if (!parseArgs(args, arg::i(&start), arg::i(&len), arg::S(&u, &_u)))
         {
             if (!verifyStartLen(start, len, self->object->length()))
             {
@@ -1173,7 +1180,10 @@ static PyObject *t_unicodestring_compareCodePointOrderBetween(t_unicodestring *s
     UnicodeString *u, _u;
     int start, end, srcStart, srcEnd;
 
-    if (!parseArgs(args, "iiSii", &start, &end, &u, &_u, &srcStart, &srcEnd))
+    if (!parseArgs(args,
+                   arg::i(&start), arg::i(&end),
+                   arg::S(&u, &_u),
+                   arg::i(&srcStart), arg::i(&srcEnd)))
     {
         if (!verifyStartEnd(start, end, self->object->length()) &&
             !verifyStartEnd(srcStart, srcEnd, u->length()))
@@ -1198,14 +1208,17 @@ static PyObject *t_unicodestring_caseCompare(t_unicodestring *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &options))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&options)))
         {
             int c = self->object->caseCompare(*u, options);
             return PyInt_FromLong(c);
         }
         break;
       case 4:
-        if (!parseArgs(args, "iiSi", &start, &len, &u, &_u, &options))
+        if (!parseArgs(args,
+                       arg::i(&start), arg::i(&len),
+                       arg::S(&u, &_u),
+                       arg::i(&options)))
         {
             if (!verifyStartLen(start, len, self->object->length()))
             {
@@ -1228,8 +1241,11 @@ static PyObject *t_unicodestring_caseCompareBetween(t_unicodestring *self,
     UnicodeString *u, _u;
     int start, end, srcStart, srcEnd, options;
 
-    if (!parseArgs(args, "iiSiii", &start, &end, &u, &_u, &srcStart, &srcEnd,
-                   &options))
+    if (!parseArgs(args,
+                   arg::i(&start), arg::i(&end),
+                   arg::S(&u, &_u),
+                   arg::i(&srcStart), arg::i(&srcEnd),
+                   arg::i(&options)))
     {
         if (!verifyStartEnd(start, end, self->object->length()) &&
             !verifyStartEnd(srcStart, srcEnd, u->length()))
@@ -1254,14 +1270,14 @@ static PyObject *t_unicodestring_startsWith(t_unicodestring *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             int b = self->object->startsWith(*u);
             Py_RETURN_BOOL(b);
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &start, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, u->length()))
             {
@@ -1286,14 +1302,14 @@ static PyObject *t_unicodestring_endsWith(t_unicodestring *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             int b = self->object->endsWith(*u);
             Py_RETURN_BOOL(b);
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &start, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, u->length()))
             {
@@ -1317,12 +1333,12 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             int i = self->object->indexOf(*u);
             return PyInt_FromLong(i);
         }
-        if (!parseArgs(args, "i", &c))
+        if (!parseArgs(args, arg::i(&c)))
         {
             int i;
 
@@ -1339,7 +1355,7 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &start))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start)))
         {
             if (!verifyStart(start, u->length()))
             {
@@ -1349,7 +1365,7 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
             PyErr_SetObject(PyExc_IndexError, args);
             return NULL;
         }
-        if (!parseArgs(args, "ii", &c, &start))
+        if (!parseArgs(args, arg::i(&c), arg::i(&start)))
         {
             if (!verifyStart(start, self->object->length()))
             {
@@ -1371,7 +1387,7 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &start, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, u->length()))
             {
@@ -1381,7 +1397,7 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
             PyErr_SetObject(PyExc_IndexError, args);
             return NULL;
         }
-        if (!parseArgs(args, "iii", &c, &start, &len))
+        if (!parseArgs(args, arg::i(&c), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, self->object->length()))
             {
@@ -1403,8 +1419,10 @@ static PyObject *t_unicodestring_indexOf(t_unicodestring *self, PyObject *args)
         }
         break;
       case 5:
-        if (!parseArgs(args, "Siiii", &u, &_u,
-                       &srcStart, &srcLen, &start, &len))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::i(&srcStart), arg::i(&srcLen),
+                       arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(srcStart, srcLen, u->length()) &&
                 !verifyStartLen(start, len, self->object->length()))
@@ -1428,12 +1446,12 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             int i = self->object->lastIndexOf(*u);
             return PyInt_FromLong(i);
         }
-        if (!parseArgs(args, "i", &c))
+        if (!parseArgs(args, arg::i(&c)))
         {
             int i;
 
@@ -1450,7 +1468,7 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
         }
         break;
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &start))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start)))
         {
             if (!verifyStart(start, u->length()))
             {
@@ -1460,7 +1478,7 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
             PyErr_SetObject(PyExc_IndexError, args);
             return NULL;
         }
-        if (!parseArgs(args, "ii", &c, &start))
+        if (!parseArgs(args, arg::i(&c), arg::i(&start)))
         {
             if (!verifyStart(start, self->object->length()))
             {
@@ -1482,7 +1500,7 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &start, &len))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, u->length()))
             {
@@ -1492,7 +1510,7 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
             PyErr_SetObject(PyExc_IndexError, args);
             return NULL;
         }
-        if (!parseArgs(args, "iii", &c, &start, &len))
+        if (!parseArgs(args, arg::i(&c), arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(start, len, self->object->length()))
             {
@@ -1514,8 +1532,10 @@ static PyObject *t_unicodestring_lastIndexOf(t_unicodestring *self,
         }
         break;
       case 5:
-        if (!parseArgs(args, "Siiii", &u, &_u,
-                       &srcStart, &srcLen, &start, &len))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::i(&srcStart), arg::i(&srcLen),
+                       arg::i(&start), arg::i(&len)))
         {
             if (!verifyStartLen(srcStart, srcLen, u->length()) &&
                 !verifyStartLen(start, len, self->object->length()))
@@ -1542,7 +1562,7 @@ static PyObject *t_unicodestring_truncate(t_unicodestring *self, PyObject *arg)
 {
     int length;
 
-    if (!parseArg(arg, "i", &length))
+    if (!parseArg(arg, arg::i(&length)))
     {
         self->object->truncate(length);
         Py_RETURN_SELF();
@@ -1560,7 +1580,7 @@ static PyObject *t_unicodestring_reverse(t_unicodestring *self, PyObject *args)
         self->object->reverse();
         Py_RETURN_SELF();
       case 2:
-        if (!parseArgs(args, "ii", &start, &length))
+        if (!parseArgs(args, arg::i(&start), arg::i(&length)))
         {
             self->object->reverse(start, length);
             Py_RETURN_SELF();
@@ -1580,14 +1600,14 @@ static PyObject *t_unicodestring_remove(t_unicodestring *self, PyObject *args)
         self->object->remove();
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "i", &start))
+        if (!parseArgs(args, arg::i(&start)))
         {
             self->object->remove(start);
             Py_RETURN_SELF();
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &start, &length))
+        if (!parseArgs(args, arg::i(&start), arg::i(&length)))
         {
             self->object->remove(start, length);
             Py_RETURN_SELF();
@@ -1607,14 +1627,14 @@ static PyObject *t_unicodestring_removeBetween(t_unicodestring *self, PyObject *
         self->object->remove();
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "i", &start))
+        if (!parseArgs(args, arg::i(&start)))
         {
             self->object->removeBetween(start);
             Py_RETURN_SELF();
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &start, &limit))
+        if (!parseArgs(args, arg::i(&start), arg::i(&limit)))
         {
             self->object->removeBetween(start, limit);
             Py_RETURN_SELF();
@@ -1633,14 +1653,14 @@ static PyObject *t_unicodestring_retainBetween(t_unicodestring *self, PyObject *
       case 0:
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "i", &start))
+        if (!parseArgs(args, arg::i(&start)))
         {
             self->object->retainBetween(start);
             Py_RETURN_SELF();
         }
         break;
       case 2:
-        if (!parseArgs(args, "ii", &start, &limit))
+        if (!parseArgs(args, arg::i(&start), arg::i(&limit)))
         {
             self->object->retainBetween(start, limit);
             Py_RETURN_SELF();
@@ -1660,7 +1680,7 @@ static PyObject *t_unicodestring_toUpper(t_unicodestring *self, PyObject *args)
         self->object->toUpper();
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->toUpper(*locale);
             Py_RETURN_SELF();
@@ -1680,7 +1700,7 @@ static PyObject *t_unicodestring_toLower(t_unicodestring *self, PyObject *args)
         self->object->toLower();
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->toLower(*locale);
             Py_RETURN_SELF();
@@ -1701,20 +1721,21 @@ static PyObject *t_unicodestring_toTitle(t_unicodestring *self, PyObject *args)
         self->object->toTitle(NULL);
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->toTitle(NULL, *locale);
             Py_RETURN_SELF();
         }
-        if (!parseArg(args, "P", TYPE_ID(BreakIterator), &iterator))
+        if (!parseArg(args, arg::P<BreakIterator>(TYPE_ID(BreakIterator), &iterator)))
         {
             self->object->toTitle(iterator);
             Py_RETURN_SELF();
         }
         break;
       case 2:
-        if (!parseArgs(args, "PP", TYPE_ID(BreakIterator),
-                       TYPE_CLASSID(Locale), &iterator, &locale))
+        if (!parseArgs(args,
+                       arg::P<BreakIterator>(TYPE_ID(BreakIterator), &iterator),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->toTitle(iterator, *locale);
             Py_RETURN_SELF();
@@ -1734,7 +1755,7 @@ static PyObject *t_unicodestring_foldCase(t_unicodestring *self, PyObject *args)
         self->object->foldCase(0);
         Py_RETURN_SELF();
       case 1:
-        if (!parseArgs(args, "i", &i))
+        if (!parseArgs(args, arg::i(&i)))
         {
             self->object->foldCase(i);
             Py_RETURN_SELF();
@@ -1797,7 +1818,7 @@ static PyObject *t_unicodestring_encode(t_unicodestring *self, PyObject *arg)
 {
     charsArg encoding;
 
-    if (!parseArg(arg, "n", &encoding))
+    if (!parseArg(arg, arg::n(&encoding)))
     {
         int srcLen = self->object->length();
         int dstLen = srcLen * 4, _dstLen;
@@ -1858,7 +1879,7 @@ static PyObject *t_unicodestring_countChar32(t_unicodestring *self,
         return PyInt_FromLong(len);
 
       case 1:
-        if (!parseArgs(args, "i", &start))
+        if (!parseArgs(args, arg::i(&start)))
         {
             len = self->object->countChar32(start);
             return PyInt_FromLong(len);
@@ -1866,7 +1887,7 @@ static PyObject *t_unicodestring_countChar32(t_unicodestring *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "ii", &start, &length))
+        if (!parseArgs(args, arg::i(&start), arg::i(&length)))
         {
             len = self->object->countChar32(start, length);
             return PyInt_FromLong(len);
@@ -2029,7 +2050,7 @@ static PyObject *t_unicodestring_idna_compare(t_unicodestring *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             STATUS_CALL(n = uidna_compare(self->object->getBuffer(),
                                           self->object->length(),
@@ -2039,7 +2060,7 @@ static PyObject *t_unicodestring_idna_compare(t_unicodestring *self,
         }
         break;
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &options))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&options)))
         {
             STATUS_CALL(n = uidna_compare(self->object->getBuffer(),
                                           self->object->length(),
@@ -2111,14 +2132,14 @@ static PyObject *t_unicodestring_concat(t_unicodestring *self, PyObject *arg)
     UnicodeString _u;
     int i;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UnicodeString *v = new UnicodeString(*self->object);
         *v += *u;
         return wrap_UnicodeString(v, T_OWNED);
     }
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         UnicodeString *v = new UnicodeString(*self->object);
 
@@ -2213,17 +2234,16 @@ static int t_unicodestring_ass_item(t_unicodestring *self,
     {
         int i;
 
-        if (!parseArg(arg, "i", &i))
+        if (!parseArg(arg, arg::i(&i)))
         {
             // unicodestring as sequence of UChar, not codepoints
             u->replace((int32_t) n, 1, (UChar) i);
             return 0;
         }
 
-        UnicodeString *v;
-        UnicodeString _v;
+        UnicodeString *v, _v;
 
-        if (!parseArg(arg, "S", &v, &_v))
+        if (!parseArg(arg, arg::S(&v, &_v)))
         {
             if (v->length() == 1)
             {
@@ -2250,10 +2270,9 @@ static int t_unicodestring_ass_slice(t_unicodestring *self,
                                      Py_ssize_t l, Py_ssize_t h,
                                      PyObject *arg)
 {
-    UnicodeString *v;
-    UnicodeString _v;
+    UnicodeString *v, _v;
 
-    if (!parseArg(arg, "S", &v, &_v))
+    if (!parseArg(arg, arg::S(&v, &_v)))
     {
         UnicodeString *u = self->object;
         int len = u->length();
@@ -2287,10 +2306,9 @@ static int t_unicodestring_ass_slice(t_unicodestring *self,
 
 static int t_unicodestring_contains(t_unicodestring *self, PyObject *arg)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
         return self->object->indexOf(*u) == 0;
 
     PyErr_SetObject(PyExc_TypeError, arg);
@@ -2300,11 +2318,10 @@ static int t_unicodestring_contains(t_unicodestring *self, PyObject *arg)
 static PyObject *t_unicodestring_inplace_concat(t_unicodestring *self,
                                                 PyObject *arg)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
     int i;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         *self->object += *u;
 
@@ -2312,7 +2329,7 @@ static PyObject *t_unicodestring_inplace_concat(t_unicodestring *self,
         return (PyObject *) self;
     }
 
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         self->object->append((UChar32) i);
 
@@ -2444,7 +2461,9 @@ static int t_formattable_init(t_formattable *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 2:
-        if (!parseArgs(args, "Di", &date, &flag))
+        if (!parseArgs(args,
+                       arg::D(&date),
+                       arg::Enum<Formattable::ISDATE>(&flag)))
         {
             self->object = new Formattable(date, flag);
             self->flags = T_OWNED;
@@ -2538,7 +2557,7 @@ static PyObject *t_formattable_getString(t_formattable *self, PyObject *args)
           PyObject *arg = PyTuple_GET_ITEM(args, 0);
           UnicodeString *u;
 
-          if (!parseArg(arg, "U", &u))
+          if (!parseArg(arg, arg::U(&u)))
           {
               self->object->getString(*u, status);
               if (U_FAILURE(status))
@@ -2558,7 +2577,7 @@ static PyObject *t_formattable_setDouble(t_formattable *self, PyObject *arg)
 {
     double d;
     
-    if (!parseArg(arg, "d", &d))
+    if (!parseArg(arg, arg::d(&d)))
     {
         self->object->setDouble(d);
         Py_RETURN_NONE;
@@ -2571,7 +2590,7 @@ static PyObject *t_formattable_setLong(t_formattable *self, PyObject *arg)
 {
     int n;
     
-    if (!parseArg(arg, "i", &n))
+    if (!parseArg(arg, arg::i(&n)))
     {
         self->object->setLong(n);
         Py_RETURN_NONE;
@@ -2584,7 +2603,7 @@ static PyObject *t_formattable_setInt64(t_formattable *self, PyObject *arg)
 {
     PY_LONG_LONG l;
     
-    if (!parseArg(arg, "L", &l))
+    if (!parseArg(arg, arg::L(&l)))
     {
         self->object->setInt64(l);
         Py_RETURN_NONE;
@@ -2597,7 +2616,7 @@ static PyObject *t_formattable_setDate(t_formattable *self, PyObject *arg)
 {
     double date;
     
-    if (!parseArg(arg, "D", &date))
+    if (!parseArg(arg, arg::D(&date)))
     {
         self->object->setDate(date);
         Py_RETURN_NONE;
@@ -2610,7 +2629,7 @@ static PyObject *t_formattable_setString(t_formattable *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->setString(*u); /* copied */
         Py_RETURN_NONE;
@@ -2619,7 +2638,7 @@ static PyObject *t_formattable_setString(t_formattable *self, PyObject *arg)
     return PyErr_SetArgsError((PyObject *) self, "setString", arg);
 }
 
-DEFINE_RICHCMP(Formattable, t_formattable)
+DEFINE_RICHCMP__ARG__(Formattable, t_formattable)
 
 static PyObject *t_formattable_str(t_formattable *self)
 {
