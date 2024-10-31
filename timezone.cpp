@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2021 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,8 @@
 #include "locale.h"
 #include "timezone.h"
 #include "macros.h"
+
+#include "arg.h"
 
 /* apparently a macro defined by some versions of the MSVC compiler */
 #ifdef daylight
@@ -456,7 +458,7 @@ static PyObject *t_timezonerule_isEquivalentTo(t_timezonerule *self,
 {
     TimeZoneRule *tzr;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(TimeZoneRule), &tzr))
+    if (!parseArg(arg, arg::P<TimeZoneRule>(TYPE_CLASSID(TimeZoneRule), &tzr)))
     {
         UBool result = self->object->isEquivalentTo(*tzr);
         Py_RETURN_BOOL(result);
@@ -483,7 +485,7 @@ static PyObject *t_timezonerule_getFirstStart(t_timezonerule *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "ii", &prevRawOffset, &prevDSTSavings))
+        if (!parseArgs(args, arg::i(&prevRawOffset), arg::i(&prevDSTSavings)))
         {
             STATUS_CALL(result = self->object->getFirstStart(
                 prevRawOffset, prevDSTSavings, date));
@@ -517,7 +519,7 @@ static PyObject *t_timezonerule_getFinalStart(t_timezonerule *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "ii", &prevRawOffset, &prevDSTSavings))
+        if (!parseArgs(args, arg::i(&prevRawOffset), arg::i(&prevDSTSavings)))
         {
             STATUS_CALL(result = self->object->getFinalStart(
                 prevRawOffset, prevDSTSavings, date));
@@ -542,7 +544,7 @@ static PyObject *t_timezonerule_getNextStart(t_timezonerule *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "D", &base))
+        if (!parseArgs(args, arg::D(&base)))
         {
             STATUS_CALL(result = self->object->getNextStart(
                 base, 0, 0, false, date));
@@ -555,7 +557,7 @@ static PyObject *t_timezonerule_getNextStart(t_timezonerule *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "Db", &base, &inclusive))
+        if (!parseArgs(args, arg::D(&base), arg::b(&inclusive)))
         {
             STATUS_CALL(result = self->object->getNextStart(
                 base, 0, 0, inclusive, date));
@@ -568,7 +570,7 @@ static PyObject *t_timezonerule_getNextStart(t_timezonerule *self,
         break;
 
       case 3:
-        if (!parseArgs(args, "Dii", &base, &prevRawOffset, &prevDSTSavings))
+        if (!parseArgs(args, arg::D(&base), arg::i(&prevRawOffset), arg::i(&prevDSTSavings)))
         {
             STATUS_CALL(result = self->object->getNextStart(
                 base, prevRawOffset, prevDSTSavings, false, date));
@@ -581,8 +583,7 @@ static PyObject *t_timezonerule_getNextStart(t_timezonerule *self,
         break;
 
       case 4:
-        if (!parseArgs(args, "Diib", &base, &prevRawOffset, &prevDSTSavings,
-                       &inclusive))
+        if (!parseArgs(args, arg::D(&base), arg::i(&prevRawOffset), arg::i(&prevDSTSavings), arg::b(&inclusive)))
         {
             STATUS_CALL(result = self->object->getNextStart(
                 base, prevRawOffset, prevDSTSavings, inclusive, date));
@@ -607,7 +608,7 @@ static PyObject *t_timezonerule_getPreviousStart(t_timezonerule *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "D", &base))
+        if (!parseArgs(args, arg::D(&base)))
         {
             STATUS_CALL(result = self->object->getPreviousStart(
                 base, 0, 0, false, date));
@@ -620,7 +621,7 @@ static PyObject *t_timezonerule_getPreviousStart(t_timezonerule *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "Db", &base, &inclusive))
+        if (!parseArgs(args, arg::D(&base), arg::b(&inclusive)))
         {
             STATUS_CALL(result = self->object->getPreviousStart(
                 base, 0, 0, inclusive, date));
@@ -633,7 +634,7 @@ static PyObject *t_timezonerule_getPreviousStart(t_timezonerule *self,
         break;
 
       case 3:
-        if (!parseArgs(args, "Dii", &base, &prevRawOffset, &prevDSTSavings))
+        if (!parseArgs(args, arg::D(&base), arg::i(&prevRawOffset), arg::i(&prevDSTSavings)))
         {
             STATUS_CALL(result = self->object->getPreviousStart(
                 base, prevRawOffset, prevDSTSavings, false, date));
@@ -646,8 +647,7 @@ static PyObject *t_timezonerule_getPreviousStart(t_timezonerule *self,
         break;
 
       case 4:
-        if (!parseArgs(args, "Diib", &base, &prevRawOffset, &prevDSTSavings,
-                       &inclusive))
+        if (!parseArgs(args, arg::D(&base), arg::i(&prevRawOffset), arg::i(&prevDSTSavings), arg::b(&inclusive)))
         {
             STATUS_CALL(result = self->object->getPreviousStart(
                 base, prevRawOffset, prevDSTSavings, inclusive, date));
@@ -671,7 +671,7 @@ static PyObject *t_timezonerule_str(t_timezonerule *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(TimeZoneRule, t_timezonerule)
+DEFINE_RICHCMP__ARG__(TimeZoneRule, t_timezonerule)
 
 
 /* AnnualTimeZoneRule */
@@ -694,7 +694,7 @@ static PyObject *t_annualtimezonerule_getStartInYear(t_annualtimezonerule *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "i", &year))
+        if (!parseArgs(args, arg::i(&year)))
         {
             if (self->object->getStartInYear(year, 0, 0, date))
                 return PyFloat_FromDouble(date / 1000.0);
@@ -704,7 +704,7 @@ static PyObject *t_annualtimezonerule_getStartInYear(t_annualtimezonerule *self,
         break;
 
       case 3:
-        if (!parseArgs(args, "iii", &year, &prevRawOffset, &prevDSTSavings))
+        if (!parseArgs(args, arg::i(&year), arg::i(&prevRawOffset), arg::i(&prevDSTSavings)))
         {
             if (self->object->getStartInYear(
                     year, prevRawOffset, prevDSTSavings, date))
@@ -746,7 +746,7 @@ static PyObject *t_timearraytimezonerule_getStartTimeAt(
 {
     int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         UDate date;
 
@@ -845,12 +845,13 @@ PyObject *wrap_TimeZone(const TimeZone &tz)
 static PyObject *t_timezone_getOffset(t_timezone *self, PyObject *args)
 {
     UDate date;
-    int local, rawOffset, dstOffset, offset;
+    UBool local;
+    int rawOffset, dstOffset, offset;
     int era, year, month, day, dayOfWeek, millis, monthLength;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Db", &date, &local))
+        if (!parseArgs(args, arg::D(&date), arg::b(&local)))
         {
             STATUS_CALL(self->object->getOffset(date, (UBool) local,
                                                 rawOffset, dstOffset, status));
@@ -858,16 +859,14 @@ static PyObject *t_timezone_getOffset(t_timezone *self, PyObject *args)
         }
         break;
       case 6:
-        if (!parseArgs(args, "iiiiii", &era, &year, &month, &day, &dayOfWeek,
-                       &millis))
+        if (!parseArgs(args, arg::i(&era), arg::i(&year), arg::i(&month), arg::i(&day), arg::i(&dayOfWeek), arg::i(&millis)))
         {
             STATUS_CALL(offset = self->object->getOffset((uint8_t) era, year, month, day, dayOfWeek, millis, status));
             return PyInt_FromLong(offset);
         }
         break;
       case 7:
-        if (!parseArgs(args, "iiiiiii", &era, &year, &month, &day, &dayOfWeek,
-                       &millis, &monthLength))
+        if (!parseArgs(args, arg::i(&era), arg::i(&year), arg::i(&month), arg::i(&day), arg::i(&dayOfWeek), arg::i(&millis), arg::i(&monthLength)))
         {
             STATUS_CALL(offset = self->object->getOffset((uint8_t) era, year, month, day, dayOfWeek, millis, monthLength, status));
             return PyInt_FromLong(offset);
@@ -887,7 +886,7 @@ static PyObject *t_timezone_setRawOffset(t_timezone *self, PyObject *arg)
 {
     int offset;
 
-    if (!parseArg(arg, "i", &offset))
+    if (!parseArg(arg, arg::i(&offset)))
     {
         self->object->setRawOffset(offset);
         Py_RETURN_NONE;
@@ -905,7 +904,7 @@ static PyObject *t_timezone_getID(t_timezone *self, PyObject *args)
         self->object->getID(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getID(*u);
             Py_RETURN_ARG(args, 0);
@@ -920,7 +919,7 @@ static PyObject *t_timezone_setID(t_timezone *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         self->object->setID(*u); /* copied */
         Py_RETURN_NONE;
@@ -932,7 +931,7 @@ static PyObject *t_timezone_setID(t_timezone *self, PyObject *arg)
 static PyObject *t_timezone_getDisplayName(t_timezone *self, PyObject *args)
 {
     UnicodeString *u, _u;
-    int daylight;
+    UBool daylight;
     Locale *locale;
     TimeZone::EDisplayType type;
 
@@ -941,48 +940,59 @@ static PyObject *t_timezone_getDisplayName(t_timezone *self, PyObject *args)
         self->object->getDisplayName(_u);
         return PyUnicode_FromUnicodeString(&_u);
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             self->object->getDisplayName(*locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "U", &u))
+        if (!parseArgs(args, arg::U(&u)))
         {
             self->object->getDisplayName(*u);
             Py_RETURN_ARG(args, 0);
         }
         break;
       case 2:
-        if (!parseArgs(args, "bi", &daylight, &type))
+        if (!parseArgs(args,
+                       arg::b(&daylight),
+                       arg::Enum<TimeZone::EDisplayType>(&type)))
         {
-            self->object->getDisplayName((UBool) daylight, type, _u);
+            self->object->getDisplayName(daylight, type, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "PU", TYPE_CLASSID(Locale),
-                       &locale, &u))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::U(&u)))
         {
             self->object->getDisplayName(*locale, *u);
             Py_RETURN_ARG(args, 1);
         }
         break;
       case 3:
-        if (!parseArgs(args, "biP", TYPE_CLASSID(Locale),
-                       &daylight, &type, &locale))
+        if (!parseArgs(args,
+                       arg::b(&daylight),
+                       arg::Enum<TimeZone::EDisplayType>(&type),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
-            self->object->getDisplayName((UBool) daylight, type, *locale, _u);
+            self->object->getDisplayName(daylight, type, *locale, _u);
             return PyUnicode_FromUnicodeString(&_u);
         }
-        if (!parseArgs(args, "biU", &daylight, &type, &u))
+        if (!parseArgs(args,
+                       arg::b(&daylight),
+                       arg::Enum<TimeZone::EDisplayType>(&type),
+                       arg::U(&u)))
         {
-            self->object->getDisplayName((UBool) daylight, type, *u);
+            self->object->getDisplayName(daylight, type, *u);
             Py_RETURN_ARG(args, 2);
         }
         break;
       case 4:
-        if (!parseArgs(args, "biPU", TYPE_CLASSID(Locale),
-                       &daylight, &type, &locale, &u))
+        if (!parseArgs(args,
+                       arg::b(&daylight),
+                       arg::Enum<TimeZone::EDisplayType>(&type),
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::U(&u)))
         {
-            self->object->getDisplayName((UBool) daylight, type, *locale, *u);
+            self->object->getDisplayName(daylight, type, *locale, *u);
             Py_RETURN_ARG(args, 3);
         }
         break;
@@ -1002,7 +1012,7 @@ static PyObject *t_timezone_inDaylightTime(t_timezone *self, PyObject *arg)
     UDate date;
     UBool b;
 
-    if (!parseArg(arg, "D", &date))
+    if (!parseArg(arg, arg::D(&date)))
     {
         STATUS_CALL(b = self->object->inDaylightTime(date, status));
         Py_RETURN_BOOL(b);
@@ -1016,7 +1026,7 @@ static PyObject *t_timezone_hasSameRules(t_timezone *self, PyObject *arg)
     TimeZone *tz;
     UBool b;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(TimeZone), &tz))
+    if (!parseArg(arg, arg::P<TimeZone>(TYPE_CLASSID(TimeZone), &tz)))
     {
         b = self->object->hasSameRules(*tz);
         Py_RETURN_BOOL(b);
@@ -1037,10 +1047,9 @@ static PyObject *t_timezone_getGMT(PyTypeObject *type)
 
 PyObject *t_timezone_createTimeZone(PyTypeObject *type, PyObject *arg)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         TimeZone *tz = TimeZone::createTimeZone(*u);
         const TimeZone *gmt = TimeZone::getGMT();
@@ -1094,13 +1103,13 @@ static PyObject *t_timezone_createEnumeration(PyTypeObject *type,
         return wrap_StringEnumeration(tze, T_OWNED);
 
       case 1:
-        if (!parseArgs(args, "i", &offset))
+        if (!parseArgs(args, arg::i(&offset)))
         {
             STATUS_CALL(tze = TimeZone::createEnumerationForRawOffset(
                 offset, status));
             return wrap_StringEnumeration(tze, T_OWNED);
         }
-        if (!parseArgs(args, "n", &region))
+        if (!parseArgs(args, arg::n(&region)))
         {
             STATUS_CALL(tze = TimeZone::createEnumerationForRegion(
                 region, status));
@@ -1122,9 +1131,9 @@ static PyObject *t_timezone_createEnumeration(PyTypeObject *type,
       case 0:
         return wrap_StringEnumeration(TimeZone::createEnumeration(), T_OWNED);
       case 1:
-        if (!parseArgs(args, "i", &offset))
+        if (!parseArgs(args, arg::i(&offset)))
             return wrap_StringEnumeration(TimeZone::createEnumeration(offset), T_OWNED);
-        if (!parseArgs(args, "n", &country))
+        if (!parseArgs(args, arg::n(&country)))
             return wrap_StringEnumeration(TimeZone::createEnumeration(country), T_OWNED);
         break;
     }
@@ -1136,10 +1145,9 @@ static PyObject *t_timezone_createEnumeration(PyTypeObject *type,
 static PyObject *t_timezone_countEquivalentIDs(PyTypeObject *type,
                                                PyObject *arg)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
         return PyInt_FromLong(TimeZone::countEquivalentIDs(*u));
 
     return PyErr_SetArgsError(type, "countEquivalentIDs", arg);
@@ -1147,11 +1155,10 @@ static PyObject *t_timezone_countEquivalentIDs(PyTypeObject *type,
 
 static PyObject *t_timezone_getEquivalentID(PyTypeObject *type, PyObject *args)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
     int index;
 
-    if (!parseArgs(args, "Si", &u, &_u, &index))
+    if (!parseArgs(args, arg::S(&u, &_u), arg::i(&index)))
     {
         UnicodeString v = TimeZone::getEquivalentID(*u, index);
         return PyUnicode_FromUnicodeString(&v);
@@ -1164,10 +1171,9 @@ static PyObject *t_timezone_getEquivalentID(PyTypeObject *type, PyObject *args)
 
 static PyObject *t_timezone_getRegion(PyTypeObject *type, PyObject *arg)
 {
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         char region[16];
         int size;
@@ -1184,13 +1190,12 @@ static PyObject *t_timezone_getRegion(PyTypeObject *type, PyObject *arg)
 static PyObject *t_timezone_getIDForWindowsID(PyTypeObject *type,
                                               PyObject *args)
 {
-    UnicodeString *winId;
-    UnicodeString _winId;
+    UnicodeString *winId, _winId;
     charsArg region;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &winId, &_winId))
+        if (!parseArgs(args, arg::S(&winId, &_winId)))
         {
             UnicodeString id;
 
@@ -1199,7 +1204,7 @@ static PyObject *t_timezone_getIDForWindowsID(PyTypeObject *type,
         }
         break;
       case 2:
-        if (!parseArgs(args, "Sn", &winId, &_winId, &region))
+        if (!parseArgs(args, arg::S(&winId, &_winId), arg::n(&region)))
         {
             UnicodeString id;
 
@@ -1217,7 +1222,7 @@ static PyObject *t_timezone_getWindowsID(PyTypeObject *type, PyObject *arg)
 {
     UnicodeString *id, _id;
 
-    if (!parseArg(arg, "S", &id, &_id))
+    if (!parseArg(arg, arg::S(&id, &_id)))
     {
         UnicodeString winId;
 
@@ -1235,7 +1240,7 @@ static PyObject *t_timezone_getIanaID(PyTypeObject *type, PyObject *arg)
 {
     UnicodeString *id, _id;
 
-    if (!parseArg(arg, "S", &id, &_id))
+    if (!parseArg(arg, arg::S(&id, &_id)))
     {
         UnicodeString ianaId;
 
@@ -1257,7 +1262,7 @@ static PyObject *t_timezone_setDefault(PyTypeObject *type, PyObject *arg)
 {
     TimeZone *tz;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(TimeZone), &tz))
+    if (!parseArg(arg, arg::P<TimeZone>(TYPE_CLASSID(TimeZone), &tz)))
     {
         TimeZone::setDefault(*tz); /* copied */
 
@@ -1283,7 +1288,7 @@ static PyObject *t_timezone_str(t_timezone *self)
     return PyUnicode_FromUnicodeString(&u);
 }
 
-DEFINE_RICHCMP(TimeZone, t_timezone)
+DEFINE_RICHCMP__ARG__(TimeZone, t_timezone)
 
 
 /* BasicTimeZone */
@@ -1296,7 +1301,7 @@ static PyObject *t_basictimezone_getNextTransition(t_basictimezone *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "D", &base))
+        if (!parseArgs(args, arg::D(&base)))
         {
             TimeZoneTransition tzt;
             UBool found = self->object->getNextTransition(base, false, tzt);
@@ -1310,7 +1315,7 @@ static PyObject *t_basictimezone_getNextTransition(t_basictimezone *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "Db", &base, &inclusive))
+        if (!parseArgs(args, arg::D(&base), arg::b(&inclusive)))
         {
             TimeZoneTransition tzt;
             UBool found = self->object->getNextTransition(base, inclusive, tzt);
@@ -1335,7 +1340,7 @@ static PyObject *t_basictimezone_getPreviousTransition(t_basictimezone *self,
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "D", &base))
+        if (!parseArgs(args, arg::D(&base)))
         {
             TimeZoneTransition tzt;
             UBool found = self->object->getPreviousTransition(base, false, tzt);
@@ -1349,7 +1354,7 @@ static PyObject *t_basictimezone_getPreviousTransition(t_basictimezone *self,
         break;
 
       case 2:
-        if (!parseArgs(args, "Db", &base, &inclusive))
+        if (!parseArgs(args, arg::D(&base), arg::b(&inclusive)))
         {
             TimeZoneTransition tzt;
             UBool found = self->object->getPreviousTransition(
@@ -1376,8 +1381,9 @@ static PyObject *t_basictimezone_hasEquivalentTransitions(t_basictimezone *self,
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "PDD", TYPE_CLASSID(BasicTimeZone), &tz,
-                       &start, &end))
+        if (!parseArgs(args,
+                       arg::P<BasicTimeZone>(TYPE_CLASSID(BasicTimeZone), &tz),
+                       arg::D(&start), arg::D(&end)))
         {
             STATUS_CALL(result = self->object->hasEquivalentTransitions(
                 *tz, start, end, false, status));
@@ -1387,8 +1393,10 @@ static PyObject *t_basictimezone_hasEquivalentTransitions(t_basictimezone *self,
         break;
 
       case 4:
-        if (!parseArgs(args, "PDDb", TYPE_CLASSID(BasicTimeZone), &tz,
-                       &start, &end, &ignoreDstAmount))
+        if (!parseArgs(args,
+                       arg::P<BasicTimeZone>(TYPE_CLASSID(BasicTimeZone), &tz),
+                       arg::D(&start), arg::D(&end),
+                       arg::b(&ignoreDstAmount)))
         {
             STATUS_CALL(result = self->object->hasEquivalentTransitions(
                 *tz, start, end, ignoreDstAmount, status));
@@ -1450,7 +1458,7 @@ static PyObject *t_basictimezone_getSimpleRulesNear(t_basictimezone *self,
                                                     PyObject *arg) {
     UDate date;
 
-    if (!parseArg(arg, "D", &date))
+    if (!parseArg(arg, arg::D(&date)))
     {
         InitialTimeZoneRule *initial;
         AnnualTimeZoneRule *std = NULL, *dst = NULL;
@@ -1498,7 +1506,10 @@ static PyObject *t_basictimezone_getOffsetFromLocal(t_basictimezone *self,
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "Dii", &date, &nonExistingOpt, &duplicateOpt))
+        if (!parseArgs(args,
+                       arg::D(&date),
+                       arg::Enum<UTimeZoneLocalOption>(&nonExistingOpt),
+                       arg::Enum<UTimeZoneLocalOption>(&duplicateOpt)))
         {
             int32_t rawOffset, dstOffset;
 
@@ -1523,8 +1534,7 @@ static int t_simpletimezone_init(t_simpletimezone *self,
                                  PyObject *args, PyObject *kwds)
 {
     SimpleTimeZone *tz;
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
     int rawOffsetGMT, savingsStartMonth, savingsStartDayOfWeekInMonth;
     int savingsStartDayOfWeek, savingsStartTime, savingsEndMonth, savingsDST;
     int savingsEndDayOfWeekInMonth, savingsEndDayOfWeek, savingsEndTime;
@@ -1532,7 +1542,7 @@ static int t_simpletimezone_init(t_simpletimezone *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "iS", &rawOffsetGMT, &u, &_u))
+        if (!parseArgs(args, arg::i(&rawOffsetGMT), arg::S(&u, &_u)))
         {
             tz = new SimpleTimeZone(rawOffsetGMT, *u);
             self->object = tz;
@@ -1540,11 +1550,9 @@ static int t_simpletimezone_init(t_simpletimezone *self,
             break;
         }
       case 10:
-        if (!parseArgs(args, "iSiiiiiiii", &rawOffsetGMT, &u, &_u,
-                       &savingsStartMonth, &savingsStartDayOfWeekInMonth,
-                       &savingsStartDayOfWeek, &savingsStartTime,
-                       &savingsEndMonth, &savingsEndDayOfWeekInMonth,
-                       &savingsEndDayOfWeek, &savingsEndTime))
+        if (!parseArgs(args,
+                       arg::i(&rawOffsetGMT), arg::S(&u, &_u),
+                       arg::i(&savingsStartMonth), arg::i(&savingsStartDayOfWeekInMonth), arg::i(&savingsStartDayOfWeek), arg::i(&savingsStartTime), arg::i(&savingsEndMonth), arg::i(&savingsEndDayOfWeekInMonth), arg::i(&savingsEndDayOfWeek), arg::i(&savingsEndTime)))
         {
             INT_STATUS_CALL(tz = new SimpleTimeZone(rawOffsetGMT, *u, savingsStartMonth, savingsStartDayOfWeekInMonth, savingsStartDayOfWeek, savingsStartTime, savingsEndMonth, savingsEndDayOfWeekInMonth, savingsEndDayOfWeek, savingsEndTime, status));
             self->object = tz;
@@ -1554,11 +1562,9 @@ static int t_simpletimezone_init(t_simpletimezone *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 11:
-        if (!parseArgs(args, "iSiiiiiiiii", &rawOffsetGMT, &u, &_u,
-                       &savingsStartMonth, &savingsStartDayOfWeekInMonth,
-                       &savingsStartDayOfWeek, &savingsStartTime,
-                       &savingsEndMonth, &savingsEndDayOfWeekInMonth,
-                       &savingsEndDayOfWeek, &savingsEndTime, &savingsDST))
+        if (!parseArgs(args,
+                       arg::i(&rawOffsetGMT), arg::S(&u, &_u),
+                       arg::i(&savingsStartMonth), arg::i(&savingsStartDayOfWeekInMonth), arg::i(&savingsStartDayOfWeek), arg::i(&savingsStartTime), arg::i(&savingsEndMonth), arg::i(&savingsEndDayOfWeekInMonth), arg::i(&savingsEndDayOfWeek), arg::i(&savingsEndTime), arg::i(&savingsDST)))
         {
             INT_STATUS_CALL(tz = new SimpleTimeZone(rawOffsetGMT, *u, savingsStartMonth, savingsStartDayOfWeekInMonth, savingsStartDayOfWeek, savingsStartTime, savingsEndMonth, savingsEndDayOfWeekInMonth, savingsEndDayOfWeek, savingsEndTime, savingsDST, status));
             self->object = tz;
@@ -1568,12 +1574,13 @@ static int t_simpletimezone_init(t_simpletimezone *self,
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
         return -1;
       case 13:
-        if (!parseArgs(args, "iSiiiiiiiiiii", &rawOffsetGMT, &u, &_u,
-                       &savingsStartMonth, &savingsStartDayOfWeekInMonth,
-                       &savingsStartDayOfWeek, &savingsStartTime, &startMode,
-                       &savingsEndMonth, &savingsEndDayOfWeekInMonth,
-                       &savingsEndDayOfWeek, &savingsEndTime, &endMode,
-                       &savingsDST))
+        if (!parseArgs(args,
+                       arg::i(&rawOffsetGMT), arg::S(&u, &_u),
+                       arg::i(&savingsStartMonth), arg::i(&savingsStartDayOfWeekInMonth), arg::i(&savingsStartDayOfWeek), arg::i(&savingsStartTime),
+                       arg::Enum<SimpleTimeZone::TimeMode>(&startMode),
+                       arg::i(&savingsEndMonth), arg::i(&savingsEndDayOfWeekInMonth), arg::i(&savingsEndDayOfWeek), arg::i(&savingsEndTime),
+                       arg::Enum<SimpleTimeZone::TimeMode>(&endMode),
+                       arg::i(&savingsDST)))
         {
             INT_STATUS_CALL(tz = new SimpleTimeZone(rawOffsetGMT, *u, savingsStartMonth, savingsStartDayOfWeekInMonth, savingsStartDayOfWeek, savingsStartTime, startMode, savingsEndMonth, savingsEndDayOfWeekInMonth, savingsEndDayOfWeek, savingsEndTime, endMode, savingsDST, status));
             self->object = tz;
@@ -1598,7 +1605,7 @@ static PyObject *t_simpletimezone_setStartYear(t_simpletimezone *self,
 {
     int year;
 
-    if (!parseArg(arg, "i", &year))
+    if (!parseArg(arg, arg::i(&year)))
     {
         self->object->setStartYear(year);
         Py_RETURN_NONE;
@@ -1612,11 +1619,11 @@ static PyObject *t_simpletimezone_setStartRule(t_simpletimezone *self,
 {
     SimpleTimeZone::TimeMode mode;
     int month, dayOfMonth, dayOfWeek, dayOfWeekInMonth, time;
-    int after;
+    UBool after;
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "iii", &month, &dayOfMonth, &time))
+        if (!parseArgs(args, arg::i(&month), arg::i(&dayOfMonth), arg::i(&time)))
         {
             STATUS_CALL(self->object->setStartRule(month, dayOfMonth, time,
                                                    status));
@@ -1624,8 +1631,7 @@ static PyObject *t_simpletimezone_setStartRule(t_simpletimezone *self,
         }
         break;
       case 4:
-        if (!parseArgs(args, "iiii", &month, &dayOfWeekInMonth,
-                       &dayOfWeek, &time))
+        if (!parseArgs(args, arg::i(&month), arg::i(&dayOfWeekInMonth), arg::i(&dayOfWeek), arg::i(&time)))
         {
             STATUS_CALL(self->object->setStartRule(month, dayOfWeekInMonth,
                                                    dayOfWeek, time, status));
@@ -1633,17 +1639,18 @@ static PyObject *t_simpletimezone_setStartRule(t_simpletimezone *self,
         }
         break;
       case 5:
-        if (!parseArgs(args, "iiiiB", &month, &dayOfMonth,
-                       &dayOfWeek, &time, &after))
+        if (!parseArgs(args,
+                       arg::i(&month), arg::i(&dayOfMonth), arg::i(&dayOfWeek), arg::i(&time),
+                       arg::B(&after)))
         {
             STATUS_CALL(self->object->setStartRule(month, dayOfMonth, dayOfWeek,
                                                    time, (UBool) after,
                                                    status));
             Py_RETURN_NONE;
         }
-        break;
-        if (!parseArgs(args, "iiiii", &month, &dayOfMonth,
-                       &dayOfWeek, &time, &mode))
+        if (!parseArgs(args,
+                       arg::i(&month), arg::i(&dayOfMonth), arg::i(&dayOfWeek), arg::i(&time),
+                       arg::Enum<SimpleTimeZone::TimeMode>(&mode)))
         {
             STATUS_CALL(self->object->setStartRule(month, dayOfMonth, dayOfWeek,
                                                    time, mode, status));
@@ -1651,8 +1658,10 @@ static PyObject *t_simpletimezone_setStartRule(t_simpletimezone *self,
         }
         break;
       case 6:
-        if (!parseArgs(args, "iiiiiib", &month, &dayOfMonth,
-                       &dayOfWeek, &time, &mode, &after))
+        if (!parseArgs(args,
+                       arg::i(&month), arg::i(&dayOfMonth), arg::i(&dayOfWeek), arg::i(&time),
+                       arg::Enum<SimpleTimeZone::TimeMode>(&mode),
+                       arg::b(&after)))
         {
             STATUS_CALL(self->object->setStartRule(month, dayOfMonth, dayOfWeek,
                                                    time, mode, after, status));
@@ -1669,11 +1678,11 @@ static PyObject *t_simpletimezone_setEndRule(t_simpletimezone *self,
 {
     SimpleTimeZone::TimeMode mode;
     int month, dayOfMonth, dayOfWeek, dayOfWeekInMonth, time;
-    int after;
+    UBool after;
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "iii", &month, &dayOfMonth, &time))
+        if (!parseArgs(args, arg::i(&month), arg::i(&dayOfMonth), arg::i(&time)))
         {
             STATUS_CALL(self->object->setEndRule(month, dayOfMonth,
                                                  time, status));
@@ -1681,8 +1690,7 @@ static PyObject *t_simpletimezone_setEndRule(t_simpletimezone *self,
         }
         break;
       case 4:
-        if (!parseArgs(args, "iiii", &month, &dayOfWeekInMonth,
-                       &dayOfWeek, &time))
+        if (!parseArgs(args, arg::i(&month), arg::i(&dayOfWeekInMonth), arg::i(&dayOfWeek), arg::i(&time)))
         {
             STATUS_CALL(self->object->setEndRule(month, dayOfWeekInMonth,
                                                  dayOfWeek, time, status));
@@ -1690,16 +1698,16 @@ static PyObject *t_simpletimezone_setEndRule(t_simpletimezone *self,
         }
         break;
       case 5:
-        if (!parseArgs(args, "iiiiB", &month, &dayOfMonth,
-                       &dayOfWeek, &time, &after))
+        if (!parseArgs(args,
+                       arg::i(&month), arg::i(&dayOfMonth), arg::i(&dayOfWeek), arg::i(&time),
+                       arg::B(&after)))
         {
             STATUS_CALL(self->object->setEndRule(month, dayOfMonth, dayOfWeek,
                                                  time, (UBool) after, status));
             Py_RETURN_NONE;
         }
-        break;
-        if (!parseArgs(args, "iiiii", &month, &dayOfMonth,
-                       &dayOfWeek, &time, &mode))
+        if (!parseArgs(args, arg::i(&month), arg::i(&dayOfMonth), arg::i(&dayOfWeek), arg::i(&time),
+                       arg::Enum<SimpleTimeZone::TimeMode>(&mode)))
         {
             STATUS_CALL(self->object->setEndRule(month, dayOfMonth, dayOfWeek,
                                                  time, mode, status));
@@ -1707,8 +1715,10 @@ static PyObject *t_simpletimezone_setEndRule(t_simpletimezone *self,
         }
         break;
       case 6:
-        if (!parseArgs(args, "iiiiiib", &month, &dayOfMonth,
-                       &dayOfWeek, &time, &mode, &after))
+        if (!parseArgs(args,
+                       arg::i(&month), arg::i(&dayOfMonth), arg::i(&dayOfWeek), arg::i(&time),
+                       arg::Enum<SimpleTimeZone::TimeMode>(&mode),
+                       arg::b(&after)))
         {
             STATUS_CALL(self->object->setEndRule(month, dayOfMonth, dayOfWeek,
                                                  time, mode, after, status));
@@ -1727,8 +1737,7 @@ static PyObject *t_simpletimezone_getOffset(t_simpletimezone *self,
     int monthLength, prevMonthLength;
     int offset;
 
-    if (!parseArgs(args, "iiiiiiii", &era, &year, &month, &day, &dayOfWeek,
-                   &millis, &monthLength, &prevMonthLength))
+    if (!parseArgs(args, arg::i(&era), arg::i(&year), arg::i(&month), arg::i(&day), arg::i(&dayOfWeek), arg::i(&millis), arg::i(&monthLength), arg::i(&prevMonthLength)))
     {
         STATUS_CALL(offset = self->object->getOffset(era, year, month, day, dayOfWeek, millis, monthLength, prevMonthLength, status));
         return PyInt_FromLong(offset);
@@ -1742,7 +1751,7 @@ static PyObject *t_simpletimezone_setDSTSavings(t_simpletimezone *self,
 {
     int savings;
 
-    if (!parseArg(arg, "i", &savings))
+    if (!parseArg(arg, arg::i(&savings)))
     {
         STATUS_CALL(self->object->setDSTSavings(savings, status));
         Py_RETURN_NONE;
@@ -1785,7 +1794,7 @@ static PyObject *t_vtimezone_write(t_vtimezone *self, PyObject *args)
         return PyUnicode_FromUnicodeString(&data);
 
       case 1:
-        if (!parseArgs(args, "D", &start))
+        if (!parseArgs(args, arg::D(&start)))
         {
             STATUS_CALL(self->object->write(start, data, status));
             return PyUnicode_FromUnicodeString(&data);
@@ -1800,7 +1809,7 @@ static PyObject *t_vtimezone_writeSimple(t_vtimezone *self, PyObject *arg)
 {
     UDate date;
 
-    if (!parseArg(arg, "D", &date))
+    if (!parseArg(arg, arg::D(&date)))
     {
         UnicodeString data;
         STATUS_CALL(self->object->writeSimple(date, data, status));
@@ -1815,7 +1824,7 @@ static PyObject *t_vtimezone_createVTimeZone(PyTypeObject *type, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         VTimeZone *vtz;
         STATUS_CALL(vtz = VTimeZone::createVTimeZone(*u, status));
@@ -1831,7 +1840,7 @@ static PyObject *t_vtimezone_createVTimeZoneByID(
 {
     UnicodeString *id, _id;
 
-    if (!parseArg(arg, "S", &id, &_id))
+    if (!parseArg(arg, arg::S(&id, &_id)))
     {
         VTimeZone *vtz = VTimeZone::createVTimeZoneByID(*id);
 
@@ -1850,7 +1859,7 @@ static PyObject *t_vtimezone_createVTimeZoneFromBasicTimeZone(
 {
     BasicTimeZone *tz;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(BasicTimeZone), &tz))
+    if (!parseArg(arg, arg::P<BasicTimeZone>(TYPE_CLASSID(BasicTimeZone), &tz)))
     {
         VTimeZone *vtz;
         STATUS_CALL(vtz = VTimeZone::createVTimeZoneFromBasicTimeZone(
@@ -1878,7 +1887,7 @@ static PyObject *t_timezonenames_getAvailableMetaZoneIDs(t_timezonenames *self, 
         return wrap_StringEnumeration(se, T_OWNED);
 
       case 1:
-        if (!parseArgs(args, "S", &id, &_id))
+        if (!parseArgs(args, arg::S(&id, &_id)))
         {
             STATUS_CALL(se = self->object->getAvailableMetaZoneIDs(*id, status));
             return wrap_StringEnumeration(se, T_OWNED);
@@ -1896,7 +1905,7 @@ static PyObject *t_timezonenames_getMetaZoneID(t_timezonenames *self, PyObject *
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SD", &tzID, &_tzID, &date))
+        if (!parseArgs(args, arg::S(&tzID, &_tzID), arg::D(&date)))
         {
             UnicodeString mzID;
             self->object->getMetaZoneID(*tzID, date, mzID);
@@ -1914,7 +1923,7 @@ static PyObject *t_timezonenames_getReferenceZoneID(t_timezonenames *self, PyObj
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Sn", &mzID, &_mzID, &region))
+        if (!parseArgs(args, arg::S(&mzID, &_mzID), arg::n(&region)))
         {
             UnicodeString tzID;
             self->object->getReferenceZoneID(*mzID, region, tzID);
@@ -1932,14 +1941,16 @@ static PyObject *t_timezonenames_getMetaZoneDisplayName(t_timezonenames *self, P
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &mzID, &_mzID))
+        if (!parseArgs(args, arg::S(&mzID, &_mzID)))
         {
             UnicodeString name;
             self->object->getMetaZoneDisplayName(*mzID, UTZNM_UNKNOWN, name);
             return PyUnicode_FromUnicodeString(&name);
         }
       case 2:
-        if (!parseArgs(args, "Si", &mzID, &_mzID, &type))
+        if (!parseArgs(args,
+                       arg::S(&mzID, &_mzID),
+                       arg::Enum<UTimeZoneNameType>(&type)))
         {
             UnicodeString name;
             self->object->getMetaZoneDisplayName(*mzID, type, name);
@@ -1957,14 +1968,16 @@ static PyObject *t_timezonenames_getTimeZoneDisplayName(t_timezonenames *self, P
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &tzID, &_tzID))
+        if (!parseArgs(args, arg::S(&tzID, &_tzID)))
         {
             UnicodeString name;
             self->object->getTimeZoneDisplayName(*tzID, UTZNM_UNKNOWN, name);
             return PyUnicode_FromUnicodeString(&name);
         }
       case 2:
-        if (!parseArgs(args, "Si", &tzID, &_tzID, &type))
+        if (!parseArgs(args,
+                       arg::S(&tzID, &_tzID),
+                       arg::Enum<UTimeZoneNameType>(&type)))
         {
             UnicodeString name;
             self->object->getTimeZoneDisplayName(*tzID, type, name);
@@ -1979,7 +1992,7 @@ static PyObject *t_timezonenames_getExemplarLocationName(t_timezonenames *self, 
 {
     UnicodeString *tzID, _tzID;
 
-    if (!parseArg(arg, "S", &tzID, &_tzID))
+    if (!parseArg(arg, arg::S(&tzID, &_tzID)))
     {
         UnicodeString name;
         self->object->getExemplarLocationName(*tzID, name);
@@ -1997,14 +2010,17 @@ static PyObject *t_timezonenames_getDisplayName(t_timezonenames *self, PyObject 
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "SD", &tzID, &_tzID, &date))
+        if (!parseArgs(args, arg::S(&tzID, &_tzID), arg::D(&date)))
         {
             UnicodeString name;
             self->object->getDisplayName(*tzID, UTZNM_UNKNOWN, date, name);
             return PyUnicode_FromUnicodeString(&name);
         }
       case 3:
-        if (!parseArgs(args, "SiD", &tzID, &_tzID, &type, &date))
+        if (!parseArgs(args,
+                       arg::S(&tzID, &_tzID),
+                       arg::Enum<UTimeZoneNameType>(&type),
+                       arg::D(&date)))
         {
             UnicodeString name;
             self->object->getDisplayName(*tzID, type, date, name);
@@ -2020,7 +2036,7 @@ static PyObject *t_timezonenames_createInstance(PyTypeObject *type, PyObject *ar
     TimeZoneNames *tzn;
     Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(tzn = TimeZoneNames::createInstance(*locale, status));
         return wrap_TimeZoneNames(tzn, T_OWNED);
@@ -2038,7 +2054,7 @@ static PyObject *t_timezonenames_createTZDBInstance(PyTypeObject *type, PyObject
     TimeZoneNames *tzn;
     Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         STATUS_CALL(tzn = TimeZoneNames::createTZDBInstance(*locale, status));
         return wrap_TimeZoneNames(tzn, T_OWNED);
