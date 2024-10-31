@@ -238,6 +238,30 @@ public:
     }
 };
 
+template <typename T> class SavedICUObject {
+private:
+    const classid id;
+    PyTypeObject *const type;
+    T **const obj;
+    PyObject **const pyobj;
+
+public:
+    SavedICUObject() = delete;
+
+    explicit SavedICUObject(classid param1, PyTypeObject *param2, T **param3, PyObject **param4) noexcept
+        : id(param1), type(param2), obj(param3), pyobj(param4) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!isInstance(arg, id, type))
+            return -1;
+
+        *obj = reinterpret_cast<T *>(((t_uobject *) arg)->object);
+        Py_INCREF(arg); Py_XDECREF(*pyobj); *pyobj = arg;
+        return 0;
+    }
+};
+
 template <typename T> class ICUObjectArray {
 private:
     const classid id;
@@ -267,6 +291,44 @@ public:
         }
 
         *array = reinterpret_cast<T **>(pl2cpa(arg, len, id, type));
+        if (!*array)
+            return -1;
+
+        return 0;
+    }
+};
+
+template <typename T> class ICUObjectValueArray {
+private:
+    typedef T *(*convFn)(PyObject *, size_t *, classid, PyTypeObject *);
+    const classid id;
+    PyTypeObject *const type;
+    T **const array;
+    size_t *const len;
+    const convFn fn;
+
+public:
+    ICUObjectValueArray() = delete;
+
+    explicit ICUObjectValueArray(classid param1, PyTypeObject *param2, T **param3, size_t *param4, convFn param5) noexcept
+        : id(param1), type(param2), array(param3), len(param4), fn(param5) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (PySequence_Check(arg)) {
+            if (PySequence_Length(arg) > 0) {
+                PyObject *obj = PySequence_GetItem(arg, 0);
+                int ok = isInstance(obj, id, type);
+
+                Py_DECREF(obj);
+                if (!ok)
+                    return -1;
+            }
+        } else {
+            return -1;
+        }
+
+        *array = fn(arg, len, id, type);
         if (!*array)
             return -1;
 
@@ -625,28 +687,30 @@ public:
   static_assert(std::is_standard_layout<T>::value)
 
 _IS_POD(AnyPythonObject);
-_IS_POD(BooleanStrict);
 _IS_POD(Boolean);
+_IS_POD(BooleanStrict);
+_IS_POD(BytesToCStringAndSize);
 _IS_POD(CString);
 _IS_POD(Date);
 _IS_POD(Double);
+_IS_POD(ICUObject<UObject>);
+_IS_POD(ICUObjectArray<UObject>);
+_IS_POD(ICUObjectValueArray<UObject>);
 _IS_POD(Int);
 _IS_POD(IntArray);
-_IS_POD(BytesToCStringAndSize);
 _IS_POD(None);
 _IS_POD(PythonBytes);
 _IS_POD(PythonCallable);
 _IS_POD(PythonObject);
+_IS_POD(SavedICUObject<UObject>);
 _IS_POD(SavedString);
+_IS_POD(String);
 _IS_POD(StringOrUnicodeToFSCharsArg);
 _IS_POD(StringOrUnicodeToUtf8CharsArg);
 _IS_POD(StringOrUnicodeToUtf8CharsArgArray);
-_IS_POD(String);
-_IS_POD(ICUObject<UObject>);
-_IS_POD(ICUObjectArray<UObject>);
+_IS_POD(UnicodeStringAndPythonObject);
 _IS_POD(UnicodeStringArg);
 _IS_POD(UnicodeStringArray);
-_IS_POD(UnicodeStringAndPythonObject);
 
 #undef _IS_POD
 
@@ -668,9 +732,11 @@ using m = StringOrUnicodeToUtf8CharsArgArray;
 using N = None;
 using n = StringOrUnicodeToUtf8CharsArg;
 using O = PythonObject;
-using S = String;
 template <typename T> using P = ICUObject<T>;
+template <typename T> using p = SavedICUObject<T>;
 template <typename T> using Q = ICUObjectArray<T>;
+template <typename T> using R = ICUObjectValueArray<T>;
+using S = String;
 using T = UnicodeStringArray;
 using U = UnicodeStringArg;
 using V = UnicodeStringAndPythonObject;

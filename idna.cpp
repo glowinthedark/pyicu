@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2015 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,8 @@
 #include "bases.h"
 #include "idna.h"
 #include "macros.h"
+
+#include "arg.h"
 
 #if U_ICU_VERSION_HEX >= VERSION_HEX(55, 1, 0)
 
@@ -132,7 +134,7 @@ static PyObject *t_idnainfo_errors(t_idnainfo *self)
 
 static int t_idna_init(t_idna *self, PyObject *args, PyObject *kwds)
 {
-    uint32_t options;
+    int options;
 
     switch (PyTuple_Size(args)) {
       case 0:
@@ -141,7 +143,7 @@ static int t_idna_init(t_idna *self, PyObject *args, PyObject *kwds)
         return 0;
 
       case 1:
-        if (!parseArgs(args, "i", &options))
+        if (!parseArgs(args, arg::i(&options)))
         {
             INT_STATUS_CALL(self->object = uidna_openUTS46(options, &status));
             self->flags = T_OWNED;
@@ -161,11 +163,11 @@ static PyObject *apply(idna_fn fn, const char *fn_name,
 {
     UnicodeString *u;
     UnicodeString _u;
-    t_idnainfo *infoArg;
+    PyObject *infoArg;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             const int32_t len = u->length();
             const int32_t capacity = len * 4 + 32;
@@ -198,7 +200,7 @@ static PyObject *apply(idna_fn fn, const char *fn_name,
         break;
 
       case 2:
-        if (!parseArgs(args, "SO", &IDNAInfoType_, &u, &_u, &infoArg))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::O(&IDNAInfoType_, &infoArg)))
         {
             const int32_t len = u->length();
             const int32_t capacity = len * 4 + 32;
@@ -214,7 +216,7 @@ static PyObject *apply(idna_fn fn, const char *fn_name,
             }
 
             size = (*fn)(self->object, u->getBuffer(), len, dest, capacity,
-                         infoArg->object, &status);
+                         ((t_idnainfo *) infoArg)->object, &status);
 
             if (U_FAILURE(status))
             {

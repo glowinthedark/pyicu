@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2011-2011 Open Source Applications Foundation.
+ * Copyright (c) 2011-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -34,6 +34,8 @@
 #include "bases.h"
 #include "layoutengine.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(ScriptCode)
 DECLARE_CONSTANTS_TYPE(LanguageCode)
@@ -85,7 +87,7 @@ class U_EXPORT PythonLEFontInstance : public LEFontInstance {
         {
             int n;
 
-            if (!parseArg(result, "i", &n))
+            if (!parseArg(result, arg::i(&n)))
             {
                 Py_DECREF(result);
                 return (le_int32) n;
@@ -106,7 +108,7 @@ class U_EXPORT PythonLEFontInstance : public LEFontInstance {
         {
             double d;
 
-            if (!parseArg(result, "d", &d))
+            if (!parseArg(result, arg::d(&d)))
             {
                 Py_DECREF(result);
                 return (float) d;
@@ -216,7 +218,7 @@ class U_EXPORT PythonLEFontInstance : public LEFontInstance {
         {
             int id;
 
-            if (!parseArg(result, "i", &id))
+            if (!parseArg(result, arg::i(&id)))
             {
                 Py_DECREF(result);
                 return id;
@@ -396,27 +398,30 @@ static PyObject *t_layoutengine_layoutEngineFactory(PyTypeObject *type,
 {
     LayoutEngine *le = NULL;
     LEFontInstance *fe;
-    le_int32 script, language, typo_flag;
+    int script, language, typo_flag;
 
     switch (PyTuple_Size(args)) {
       case 3:
-        if (!parseArgs(args, "Pii", TYPE_CLASSID(LEFontInstance), &fe,
-                       &script, &language))
+        if (!parseArgs(args,
+                       arg::P<LEFontInstance>(TYPE_CLASSID(LEFontInstance), &fe),
+                       arg::i(&script), arg::i(&language)))
         {
             STATUS_CALL(
                 le = LayoutEngine::layoutEngineFactory(
-                    fe, script, language, (LEErrorCode &) status));
+                    fe, (le_int32) script, (le_int32) language, (LEErrorCode &) status));
             break;
         }
         return PyErr_SetArgsError((PyObject *) type, "__init__", args);
 
       case 4:
-        if (!parseArgs(args, "Piii", TYPE_CLASSID(LEFontInstance), &fe,
-                       &script, &language, &typo_flag))
+        if (!parseArgs(args,
+                       arg::P<LEFontInstance>(TYPE_CLASSID(LEFontInstance), &fe),
+                       arg::i(&script), arg::i(&language), arg::i(&typo_flag)))
         {
             STATUS_CALL(
                 le = LayoutEngine::layoutEngineFactory(
-                    fe, script, language, typo_flag, (LEErrorCode &) status));
+                    fe, (le_int32) script, (le_int32) language,
+                    (le_int32) typo_flag, (LEErrorCode &) status));
             break;
         }
         return PyErr_SetArgsError((PyObject *) type, "__init__", args);
@@ -432,13 +437,14 @@ static PyObject *t_layoutengine_layoutChars(t_layoutengine *self,
                                             PyObject *args)
 {
     UnicodeString *u0, _u0;
-    le_int32 n, offset, count;
+    le_int32 n;
+    int offset, count;
     double x, y;
     int rtl;
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u0, &_u0))
+        if (!parseArgs(args, arg::S(&u0, &_u0)))
         {
             STATUS_CALL(
                 n = self->object->layoutChars(
@@ -449,35 +455,40 @@ static PyObject *t_layoutengine_layoutChars(t_layoutengine *self,
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u0, &_u0, &offset, &count))
+        if (!parseArgs(args, arg::S(&u0, &_u0), arg::i(&offset), arg::i(&count)))
         {
             STATUS_CALL(
                 n = self->object->layoutChars(
                     (const LEUnicode *) (u0->getBuffer()),
-                    offset, count, u0->length(), false,
+                    (le_int32) offset, (le_int32) count, u0->length(), false,
                     0.0f, 0.0f, (LEErrorCode &) status));
             return PyInt_FromLong(n);
         }
         break;
       case 4:
-        if (!parseArgs(args, "Siii", &u0, &_u0, &offset, &count, &rtl))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::i(&offset),
+                       arg::i(&count), arg::i(&rtl)))
         {
             STATUS_CALL(
                 n = self->object->layoutChars(
                     (const LEUnicode *) (u0->getBuffer()),
-                    offset, count, u0->length(), rtl,
+                    (le_int32) offset, (le_itn32) count, u0->length(), rtl,
                     0.0f, 0.0f, (LEErrorCode &) status));
             return PyInt_FromLong(n);
         }
         break;
       case 6:
-        if (!parseArgs(args, "Siiidd", &u0, &_u0, &offset, &count, &rtl,
-                       &x, &y))
+        if (!parseArgs(args,
+                       arg::S(&u0, &_u0),
+                       arg::i(&offset), arg::i(&count), arg::i(&rtl),
+                       arg::d(&x), arg::d(&y)))
         {
             STATUS_CALL(
                 n = self->object->layoutChars(
                     (const LEUnicode *) (u0->getBuffer()),
-                    offset, count, u0->length(), rtl,
+                    (le_int32) offset, (le_int32) count, u0->length(), rtl,
                     (float) x, (float) y, (LEErrorCode &) status));
             return PyInt_FromLong(n);
         }
@@ -544,12 +555,12 @@ static PyObject *t_layoutengine_getGlyphPositions(t_layoutengine *self)
 static PyObject *t_layoutengine_getGlyphPosition(t_layoutengine *self,
                                                  PyObject *arg)
 {
-    le_int32 n;
+    int n;
     float x, y;
 
-    if (!parseArg(arg, "i", &n))
+    if (!parseArg(arg, arg::i(&n)))
     {
-        STATUS_CALL(self->object->getGlyphPosition(n, x, y,
+        STATUS_CALL(self->object->getGlyphPosition((le_int32) n, x, y,
                                                    (LEErrorCode &) status));
         return Py_BuildValue("(ff)", x, y);
     }

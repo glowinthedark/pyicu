@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2022 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,8 @@
 #include "locale.h"
 #include "measureunit.h"
 #include "macros.h"
+
+#include "arg.h"
 
 #if U_ICU_VERSION_HEX >= 0x04020000
 DECLARE_CONSTANTS_TYPE(UTimeUnitFields)
@@ -689,7 +691,7 @@ DECLARE_DEALLOC_TYPE(TimeUnitAmount, t_timeunitamount, Measure,
 
 /* MeasureUnit */
 
-DEFINE_RICHCMP(MeasureUnit, t_measureunit)
+DEFINE_RICHCMP__ARG__(MeasureUnit, t_measureunit)
 
 
 #if U_ICU_VERSION_HEX >= VERSION_HEX(53, 0, 0)
@@ -717,7 +719,7 @@ static PyObject *t_measureunit_getAvailable(PyTypeObject *type, PyObject *arg)
 {
     charsArg type_name;
 
-    if (!parseArg(arg, "n", &type_name))
+    if (!parseArg(arg, arg::n(&type_name)))
     {
         UErrorCode status = U_ZERO_ERROR;
         int32_t size = MeasureUnit::getAvailable(type_name, NULL, 0, status);
@@ -789,7 +791,7 @@ static PyObject *t_measureunit_product(t_measureunit *self, PyObject *arg)
 {
     MeasureUnit *other;
 
-    if (!parseArg(arg, "P", TYPE_ID(MeasureUnit), &other))
+    if (!parseArg(arg, arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &other)))
     {
         MeasureUnit mu;
         STATUS_CALL(mu = self->object->product(*other, status));
@@ -815,8 +817,8 @@ static PyObject *t_measureunit___truediv__(PyObject *arg0, PyObject *arg1)
     MeasureUnit *mu0, *mu1;
     int i;
 
-    if (!parseArg(arg0, "P", TYPE_ID(MeasureUnit), &mu0) &&
-        !parseArg(arg1, "P", TYPE_ID(MeasureUnit), &mu1))
+    if (!parseArg(arg0, arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &mu0)) &&
+        !parseArg(arg1, arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &mu1)))
     {
         MeasureUnit mu;
 
@@ -826,8 +828,8 @@ static PyObject *t_measureunit___truediv__(PyObject *arg0, PyObject *arg1)
         return wrap_MeasureUnit((MeasureUnit *) mu.clone(), T_OWNED);
     }
 
-    if (!parseArg(arg0, "i", &i) && i == 1 &&
-        !parseArg(arg1, "P", TYPE_ID(MeasureUnit), &mu0))
+    if (!parseArg(arg0, arg::i(&i)) && i == 1 &&
+        !parseArg(arg1, arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &mu0)))
     {
         MeasureUnit mu;
 
@@ -845,8 +847,8 @@ static PyObject *t_measureunit___pow__(PyObject *arg0,
     MeasureUnit *mu0;
     int p;
 
-    if (!parseArg(arg0, "P", TYPE_ID(MeasureUnit), &mu0) &&
-        !parseArg(arg1, "i", &p) && p != 0 && arg2 == Py_None)
+    if (!parseArg(arg0, arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &mu0)) &&
+        !parseArg(arg1, arg::i(&p)) && p != 0 && arg2 == Py_None)
     {
         MeasureUnit mu = *mu0;
 
@@ -880,7 +882,7 @@ static PyObject *t_measureunit_forIdentifier(PyTypeObject *type, PyObject *arg)
 {
     charsArg identifier;
 
-    if (!parseArg(arg, "n", &identifier))
+    if (!parseArg(arg, arg::n(&identifier)))
     {
         MeasureUnit mu;
         STATUS_CALL(mu = MeasureUnit::forIdentifier(
@@ -900,7 +902,7 @@ static PyObject *t_measureunit_withPrefix(t_measureunit *self, PyObject *arg)
 {
     UMeasurePrefix prefix;
 
-    if (!parseArg(arg, "i", &prefix))
+    if (!parseArg(arg, arg::Enum<UMeasurePrefix>(&prefix)))
     {
         MeasureUnit mu;
         STATUS_CALL(mu = self->object->withPrefix(prefix, status));
@@ -1176,15 +1178,18 @@ static int t_measure_init(t_measure *self, PyObject *args, PyObject *kwds)
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "dP", TYPE_ID(MeasureUnit), &d, &unit))
+        if (!parseArgs(args,
+                       arg::d(&d),
+                       arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &unit)))
         {
             INT_STATUS_CALL(self->object = new Measure(
                 Formattable(d), (MeasureUnit *) unit->clone(), status));
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "PP", TYPE_CLASSID(Formattable),
-                       TYPE_ID(MeasureUnit), &number, &unit))
+        if (!parseArgs(args,
+                       arg::P<Formattable>(TYPE_CLASSID(Formattable), &number),
+                       arg::P<MeasureUnit>(TYPE_ID(MeasureUnit), &unit)))
         {
             INT_STATUS_CALL(self->object = new Measure(
                 *number, (MeasureUnit *) unit->clone(), status));
@@ -1264,7 +1269,7 @@ static PyObject *t_measure_str(t_measure *self)
 #endif
 }
 
-DEFINE_RICHCMP(Measure, t_measure)
+DEFINE_RICHCMP__ARG__(Measure, t_measure)
 
 
 /* NoUnit */
@@ -1298,7 +1303,7 @@ static int t_currencyunit_init(t_currencyunit *self,
     UnicodeString *u;
     UnicodeString _u;
 
-    if (!parseArgs(args, "S", &u, &_u))
+    if (!parseArgs(args, arg::S(&u, &_u)))
     {
         CurrencyUnit *cu = new CurrencyUnit(u->getTerminatedBuffer(), status);
 
@@ -1340,7 +1345,7 @@ static PyObject *t_currencyunit_getName(t_currencyunit *self, PyObject *args)
         return PyUnicode_FromUnicodeString(name, len);
         
       case 1:
-        if (!parseArgs(args, "P", TYPE_CLASSID(Locale), &locale))
+        if (!parseArgs(args, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
         {
             STATUS_CALL(name = ucurr_getName(
                 isoCode, locale->getName(), style,
@@ -1350,7 +1355,9 @@ static PyObject *t_currencyunit_getName(t_currencyunit *self, PyObject *args)
         break;
 
       case 2:
-        if (!parseArgs(args, "Pi", TYPE_CLASSID(Locale), &locale, &style))
+        if (!parseArgs(args,
+                       arg::P<Locale>(TYPE_CLASSID(Locale), &locale),
+                       arg::Enum<UCurrNameStyle>(&style)))
         {
             STATUS_CALL(name = ucurr_getName(
                 isoCode, locale->getName(), style,
@@ -1381,8 +1388,9 @@ static int t_currencyamount_init(t_currencyamount *self,
     UnicodeString *u;
     UnicodeString _u;
 
-    if (!parseArgs(args, "PS", TYPE_CLASSID(Formattable),
-                   &f, &u, &_u))
+    if (!parseArgs(args,
+                   arg::P<Formattable>(TYPE_CLASSID(Formattable), &f),
+                   arg::S(&u, &_u)))
     {
         CurrencyAmount *ca =
             new CurrencyAmount(*f, u->getTerminatedBuffer(), status);
@@ -1399,7 +1407,7 @@ static int t_currencyamount_init(t_currencyamount *self,
         return 0;
     }
 
-    if (!parseArgs(args, "dS", &d, &u, &_u))
+    if (!parseArgs(args, arg::d(&d), arg::S(&u, &_u)))
     {
         CurrencyAmount *ca =
             new CurrencyAmount(d, u->getTerminatedBuffer(), status);
@@ -1467,7 +1475,7 @@ static PyObject *t_timeunit_createInstance(PyTypeObject *type, PyObject *arg)
 {
     TimeUnit::UTimeUnitFields field;
 
-    if (!parseArg(arg, "i", &field))
+    if (!parseArg(arg, arg::Enum<TimeUnit::UTimeUnitFields>(&field)))
     {
         TimeUnit *tu;
         STATUS_CALL(tu = TimeUnit::createInstance(field, status));
@@ -1490,14 +1498,18 @@ static int t_timeunitamount_init(t_timeunitamount *self, PyObject *args,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Pi", TYPE_CLASSID(Formattable), &obj, &field))
+        if (!parseArgs(args,
+                       arg::P<Formattable>(TYPE_CLASSID(Formattable), &obj),
+                       arg::Enum<TimeUnit::UTimeUnitFields>(&field)))
         {
             INT_STATUS_CALL(self->object = new TimeUnitAmount(
                 *obj, field, status));
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "di", &d, &field))
+        if (!parseArgs(args,
+                       arg::d(&d),
+                       arg::Enum<TimeUnit::UTimeUnitFields>(&field)))
         {
             INT_STATUS_CALL(self->object = new TimeUnitAmount(
                 d, field, status));

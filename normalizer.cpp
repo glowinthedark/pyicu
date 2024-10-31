@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2010-2019 Open Source Applications Foundation.
+ * Copyright (c) 2010-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -29,6 +29,8 @@
 #include "normalizer.h"
 #include "unicodeset.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UNormalizationMode)
 DECLARE_CONSTANTS_TYPE(UNormalizationCheckResult)
@@ -205,14 +207,17 @@ static int t_normalizer_init(t_normalizer *self,
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &mode))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UNormalizationMode>(&mode)))
         {
             self->object = new Normalizer(*u, mode);
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "Pi", TYPE_ID(CharacterIterator),
-                       &iterator, &mode))
+        if (!parseArgs(args,
+                       arg::P<CharacterIterator>(TYPE_ID(CharacterIterator), &iterator),
+                       arg::Enum<UNormalizationMode>(&mode)))
         {
             self->object = new Normalizer(*iterator, mode);
             self->flags = T_OWNED;
@@ -269,9 +274,9 @@ static PyObject *t_normalizer_reset(t_normalizer *self)
 
 static PyObject *t_normalizer_setIndexOnly(t_normalizer *self, PyObject *arg)
 {
-    int32_t index;
+    int index;
 
-    if (!parseArg(arg, "i", &index))
+    if (!parseArg(arg, arg::i(&index)))
     {
         self->object->setIndexOnly(index);
         Py_RETURN_NONE;
@@ -302,7 +307,7 @@ static PyObject *t_normalizer_setMode(t_normalizer *self, PyObject *arg)
 {
     UNormalizationMode mode;
 
-    if (!parseArg(arg, "i", &mode) &&
+    if (!parseArg(arg, arg::Enum<UNormalizationMode>(&mode)) &&
         mode >= UNORM_NONE && mode < UNORM_MODE_COUNT)
     {
         self->object->setMode(mode);
@@ -331,13 +336,13 @@ static PyObject *t_normalizer_setText(t_normalizer *self, PyObject *arg)
     UnicodeString *u, _u;
     CharacterIterator *iterator;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->setText(*u, status)); /* copied */
         Py_RETURN_NONE;
     }
     
-    if (!parseArg(arg, "P", TYPE_ID(CharacterIterator), &iterator))
+    if (!parseArg(arg, arg::P<CharacterIterator>(TYPE_ID(CharacterIterator), &iterator)))
     {
         STATUS_CALL(self->object->setText(*iterator, status)); /* copied */
         Py_RETURN_NONE;
@@ -350,9 +355,12 @@ static PyObject *t_normalizer_normalize(PyTypeObject *type, PyObject *args)
 {
     UnicodeString *u, _u, target;
     UNormalizationMode mode;
-    int32_t options;
+    int options;
 
-    if (!parseArgs(args, "Sii", &u, &_u, &mode, &options))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::Enum<UNormalizationMode>(&mode),
+                   arg::i(&options)))
     {
         STATUS_CALL(Normalizer::normalize(*u, mode, options, target, status));
         return PyUnicode_FromUnicodeString(&target);
@@ -365,9 +373,12 @@ static PyObject *t_normalizer_compose(PyTypeObject *type, PyObject *args)
 {
     UnicodeString *u, _u, target;
     UBool compat;
-    int32_t options;
+    int options;
 
-    if (!parseArgs(args, "SBi", &u, &_u, &compat, &options))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::B(&compat),
+                   arg::i(&options)))
     {
         STATUS_CALL(Normalizer::compose(*u, compat, options, target, status));
         return PyUnicode_FromUnicodeString(&target);
@@ -380,9 +391,12 @@ static PyObject *t_normalizer_decompose(PyTypeObject *type, PyObject *args)
 {
     UnicodeString *u, _u, target;
     UBool compat;
-    int32_t options;
+    int options;
 
-    if (!parseArgs(args, "SBi", &u, &_u, &compat, &options))
+    if (!parseArgs(args,
+                   arg::S(&u, &_u),
+                   arg::B(&compat),
+                   arg::i(&options)))
     {
         STATUS_CALL(Normalizer::decompose(*u, compat, options, target, status));
         return PyUnicode_FromUnicodeString(&target);
@@ -393,13 +407,15 @@ static PyObject *t_normalizer_decompose(PyTypeObject *type, PyObject *args)
 
 static PyObject *t_normalizer_quickCheck(PyTypeObject *type, PyObject *args)
 {
-    UnicodeString *u, *_u;
+    UnicodeString *u, _u;
     UNormalizationMode mode;
-    int32_t options;
+    int options;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &mode))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UNormalizationMode>(&mode)))
         {
             UNormalizationCheckResult uncr;
             
@@ -408,7 +424,10 @@ static PyObject *t_normalizer_quickCheck(PyTypeObject *type, PyObject *args)
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &mode, &options))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UNormalizationMode>(&mode),
+                       arg::i(&options)))
         {
             UNormalizationCheckResult uncr;
             
@@ -424,21 +443,26 @@ static PyObject *t_normalizer_quickCheck(PyTypeObject *type, PyObject *args)
 
 static PyObject *t_normalizer_isNormalized(PyTypeObject *type, PyObject *args)
 {
-    UnicodeString *u, *_u;
+    UnicodeString *u, _u;
     UNormalizationMode mode;
-    int32_t options;
+    int options;
     UBool b;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &mode))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UNormalizationMode>(&mode)))
         {
             STATUS_CALL(b = Normalizer::isNormalized(*u, mode, status));
             Py_RETURN_BOOL(b);
         }
         break;
       case 3:
-        if (!parseArgs(args, "Sii", &u, &_u, &mode, &options))
+        if (!parseArgs(args,
+                       arg::S(&u, &_u),
+                       arg::Enum<UNormalizationMode>(&mode),
+                       arg::i(&options)))
         {
             STATUS_CALL(b = Normalizer::isNormalized(*u, mode, options,
                                                      status));
@@ -452,13 +476,17 @@ static PyObject *t_normalizer_isNormalized(PyTypeObject *type, PyObject *args)
 
 static PyObject *t_normalizer_concatenate(PyTypeObject *type, PyObject *args)
 {
-    UnicodeString *u0, *_u0;
-    UnicodeString *u1, *_u1;
+    UnicodeString *u0, _u0;
+    UnicodeString *u1, _u1;
     UnicodeString u;
     UNormalizationMode mode;
-    int32_t options;
+    int options;
 
-    if (!parseArgs(args, "SSii", &u0, &_u0, &u1, &_u1, &mode, &options))
+    if (!parseArgs(args,
+                   arg::S(&u0, &_u0),
+                   arg::S(&u1, &_u1),
+                   arg::Enum<UNormalizationMode>(&mode),
+                   arg::i(&options)))
     {
         STATUS_CALL(Normalizer::concatenate(*u0, *u1, u,
                                             mode, options, status));
@@ -470,11 +498,15 @@ static PyObject *t_normalizer_concatenate(PyTypeObject *type, PyObject *args)
 
 static PyObject *t_normalizer_compare(PyTypeObject *type, PyObject *args)
 {
-    UnicodeString *u0, *_u0;
-    UnicodeString *u1, *_u1;
-    int32_t options, n;
+    UnicodeString *u0, _u0;
+    UnicodeString *u1, _u1;
+    int options;
+    int32_t n;
 
-    if (!parseArgs(args, "SSi", &u0, &_u0, &u1, &_u1, &options))
+    if (!parseArgs(args,
+                   arg::S(&u0, &_u0),
+                   arg::S(&u1, &_u1),
+                   arg::i(&options)))
     {
         STATUS_CALL(n = Normalizer::compare(*u0, *u1, options, status));
         return PyInt_FromLong(n);
@@ -483,7 +515,7 @@ static PyObject *t_normalizer_compare(PyTypeObject *type, PyObject *args)
     return PyErr_SetArgsError(type, "compare", args);
 }
 
-DEFINE_RICHCMP(Normalizer, t_normalizer)
+DEFINE_RICHCMP__ARG__(Normalizer, t_normalizer)
 
 static long t_normalizer_hash(t_normalizer *self)
 {
@@ -518,7 +550,7 @@ static PyObject *t_normalizer2_normalize(t_normalizer2 *self, PyObject *args)
 
     switch (PyTuple_Size(args)) {
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             UnicodeString dest;
 
@@ -527,7 +559,7 @@ static PyObject *t_normalizer2_normalize(t_normalizer2 *self, PyObject *args)
         }
         break;
       case 2:
-        if (!parseArgs(args, "SU", &u, &_u, &result))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::U(&result)))
         {
             STATUS_CALL(self->object->normalize(*u, *result, status));
             Py_RETURN_ARG(args, 1);
@@ -543,7 +575,7 @@ static PyObject *t_normalizer2_normalizeSecondAndAppend(t_normalizer2 *self,
 {
     UnicodeString *u, _u, *result;
 
-    if (!parseArgs(args, "US", &result, &u, &_u))
+    if (!parseArgs(args, arg::U(&result), arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->normalizeSecondAndAppend(*result, *u,
                                                            status));
@@ -557,7 +589,7 @@ static PyObject *t_normalizer2_append(t_normalizer2 *self, PyObject *args)
 {
     UnicodeString *u, _u, *result;
 
-    if (!parseArgs(args, "US", &result, &u, &_u))
+    if (!parseArgs(args, arg::U(&result), arg::S(&u, &_u)))
     {
         STATUS_CALL(self->object->append(*result, *u, status));
         Py_RETURN_ARG(args, 0);
@@ -570,7 +602,7 @@ static PyObject *t_normalizer2_isNormalized(t_normalizer2 *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UBool b;
 
@@ -585,7 +617,7 @@ static PyObject *t_normalizer2_quickCheck(t_normalizer2 *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UNormalizationCheckResult uncr;
 
@@ -601,7 +633,7 @@ static PyObject *t_normalizer2_spanQuickCheckYes(t_normalizer2 *self,
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         int32_t end;
 
@@ -617,7 +649,7 @@ static PyObject *t_normalizer2_hasBoundaryBefore(t_normalizer2 *self,
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UChar32 c;
         int32_t len;
@@ -639,7 +671,7 @@ static PyObject *t_normalizer2_hasBoundaryAfter(t_normalizer2 *self,
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UChar32 c;
         int32_t len;
@@ -660,7 +692,7 @@ static PyObject *t_normalizer2_isInert(t_normalizer2 *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         UChar32 c;
         int32_t len;
@@ -757,9 +789,11 @@ static int t_filterednormalizer2_init(t_filterednormalizer2 *self,
     Normalizer2 *normalizer;
     UnicodeSet *filter;
 
-    if (!parseArgs(args, "pp",
-                   TYPE_CLASSID(Normalizer2), TYPE_CLASSID(UnicodeSet),
-                   &normalizer, &self->normalizer, &filter, &self->filter))
+    if (!parseArgs(args,
+                   arg::p<Normalizer2>(TYPE_CLASSID(Normalizer2), &normalizer,
+                                       &self->normalizer),
+                   arg::p<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &filter,
+                                      &self->filter)))
     {
         self->object = new FilteredNormalizer2(*normalizer, *filter);
         self->flags = T_OWNED;

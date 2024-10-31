@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2019 Open Source Applications Foundation.
+ * Copyright (c) 2019-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,6 +28,8 @@
 #include "gender.h"
 #include "locale.h"
 #include "macros.h"
+
+#include "arg.h"
 
 #if U_ICU_VERSION_HEX >= VERSION_HEX(50, 0, 0)
 
@@ -59,7 +61,7 @@ static PyObject *t_genderinfo_getInstance(PyTypeObject *type, PyObject *arg)
 {
     Locale *locale;
 
-    if (!parseArg(arg, "P", TYPE_CLASSID(Locale), &locale))
+    if (!parseArg(arg, arg::P<Locale>(TYPE_CLASSID(Locale), &locale)))
     {
         const GenderInfo *result;
         STATUS_CALL(result = GenderInfo::getInstance(*locale, status));
@@ -73,9 +75,10 @@ static PyObject *t_genderinfo_getInstance(PyTypeObject *type, PyObject *arg)
 static PyObject *t_genderinfo_getListGender(t_genderinfo *self, PyObject *arg)
 {
     UGender *genders;
-    int len;
+    size_t len;
 
-    if (!parseArg(arg, "H", &genders, &len))
+    static_assert(sizeof(UGender) == sizeof(int), "wrong size of enum");
+    if (!parseArg(arg, arg::H((int **) &genders, &len)))
     {
         UGender result;
         STATUS_CALL(

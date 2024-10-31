@@ -472,7 +472,7 @@ int isInstance(PyObject *arg, classid id, PyTypeObject *type);
 void registerType(PyTypeObject *type, classid id);
 
 Formattable *toFormattable(PyObject *arg);
-Formattable *toFormattableArray(PyObject *arg, int *len,
+Formattable *toFormattableArray(PyObject *arg, size_t *len,
                                 classid id, PyTypeObject *type);
 
 UObject **pl2cpa(PyObject *arg, size_t *len, classid id, PyTypeObject *type);

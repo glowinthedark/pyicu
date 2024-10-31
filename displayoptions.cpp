@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2022-2022 Open Source Applications Foundation.
+ * Copyright (c) 2022-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -29,6 +29,8 @@
 #include "format.h"
 #include "displayoptions.h"
 #include "macros.h"
+
+#include "arg.h"
 
 #if U_ICU_VERSION_HEX >= VERSION_HEX(72, 0, 0)
 
@@ -111,7 +113,7 @@ DECLARE_BY_VALUE_TYPE(DisplayOptions, t_displayoptions, UMemory,
 {                                                                   \
     UDisplayOptions##name option;                                   \
                                                                     \
-    if (!parseArg(arg, "i", &option))                               \
+    if (!parseArg(arg, arg::Enum<UDisplayOptions##name>(&option)))  \
     {                                                               \
         self->object->set##name(option);                            \
         Py_RETURN_SELF();                                           \

@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2021-2021 Open Source Applications Foundation.
+ * Copyright (c) 2021-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -29,6 +29,8 @@
 #include "bases.h"
 #include "messagepattern.h"
 #include "macros.h"
+
+#include "arg.h"
 
 DECLARE_CONSTANTS_TYPE(UMessagePatternApostropheMode)
 DECLARE_CONSTANTS_TYPE(UMessagePatternPartType)
@@ -176,7 +178,7 @@ static int t_messagepattern_init(t_messagepattern *self,
         self->flags = T_OWNED;
         break;
       case 1:
-        if (!parseArgs(args, "S", &u, &_u))
+        if (!parseArgs(args, arg::S(&u, &_u)))
         {
             MessagePattern *pattern;
 
@@ -185,7 +187,7 @@ static int t_messagepattern_init(t_messagepattern *self,
             self->flags = T_OWNED;
             break;
         }
-        if (!parseArgs(args, "i", &mode))
+        if (!parseArgs(args, arg::Enum<UMessagePatternApostropheMode>(&mode)))
         {
             MessagePattern *pattern;
 
@@ -211,7 +213,7 @@ static PyObject *t_messagepattern_parse(t_messagepattern *self, PyObject *arg)
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_PARSER_CALL(self->object->parse(*u, &parseError, status));
         Py_RETURN_SELF();
@@ -223,7 +225,7 @@ static PyObject *t_messagepattern_parseChoiceStyle(t_messagepattern *self, PyObj
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_PARSER_CALL(self->object->parseChoiceStyle(*u, &parseError, status));
         Py_RETURN_SELF();
@@ -235,7 +237,7 @@ static PyObject *t_messagepattern_parsePluralStyle(t_messagepattern *self, PyObj
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_PARSER_CALL(self->object->parsePluralStyle(*u, &parseError, status));
         Py_RETURN_SELF();
@@ -247,7 +249,7 @@ static PyObject *t_messagepattern_parseSelectStyle(t_messagepattern *self, PyObj
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         STATUS_PARSER_CALL(self->object->parseSelectStyle(*u, &parseError, status));
         Py_RETURN_SELF();
@@ -260,7 +262,7 @@ static PyObject *t_messagepattern_clearPatternAndSetApostropheMode(
 {
     UMessagePatternApostropheMode mode;
 
-    if (!parseArg(arg, "i", &mode))
+    if (!parseArg(arg, arg::Enum<UMessagePatternApostropheMode>(&mode)))
     {
         self->object->clearPatternAndSetApostropheMode(mode);
         Py_RETURN_NONE;
@@ -294,7 +296,7 @@ static PyObject *t_messagepattern_validateArgumentName(t_messagepattern *self, P
 {
     UnicodeString *u, _u;
 
-    if (!parseArg(arg, "S", &u, &_u))
+    if (!parseArg(arg, arg::S(&u, &_u)))
     {
         return PyInt_FromLong(self->object->validateArgumentName(*u));
     }
@@ -315,7 +317,7 @@ static PyObject *t_messagepattern_countParts(t_messagepattern *self) {
 static PyObject *t_messagepattern_getPart(t_messagepattern *self, PyObject *arg)
 {
     int i;
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         return wrap_MessagePattern_Part(self->object->getPart(i));
     }
@@ -325,7 +327,7 @@ static PyObject *t_messagepattern_getPart(t_messagepattern *self, PyObject *arg)
 static PyObject *t_messagepattern_getPartType(t_messagepattern *self, PyObject *arg)
 {
     int i;
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         return PyInt_FromLong(self->object->getPartType(i));
     }
@@ -336,7 +338,7 @@ static PyObject *t_messagepattern_getPartType(t_messagepattern *self, PyObject *
 static PyObject *t_messagepattern_getPatternIndex(t_messagepattern *self, PyObject *arg)
 {
     int i;
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         return PyInt_FromLong(self->object->getPatternIndex(i));
     }
@@ -348,7 +350,7 @@ static PyObject *t_messagepattern_getSubstring(t_messagepattern *self, PyObject 
 {
     PyObject *part;
 
-    if (!parseArg(arg, "O", &MessagePattern_PartType_, &part))
+    if (!parseArg(arg, arg::O(&MessagePattern_PartType_, &part)))
     {
         const UnicodeString result = self->object->getSubstring(
             *((t_messagepattern_part *)part)->object);
@@ -363,7 +365,9 @@ static PyObject *t_messagepattern_partSubstringMatches(t_messagepattern *self, P
     UnicodeString *u, _u;
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "OS", &MessagePattern_PartType_, &part, &u, &_u))
+        if (!parseArgs(args,
+                       arg::O(&MessagePattern_PartType_, &part),
+                       arg::S(&u, &_u)))
         {
             UBool result = self->object->partSubstringMatches(
                 *((t_messagepattern_part *)part)->object, *u);
@@ -377,7 +381,7 @@ static PyObject *t_messagepattern_getNumericValue(t_messagepattern *self, PyObje
 {
     PyObject *part;
 
-    if (!parseArg(arg, "O", &MessagePattern_PartType_, &part))
+    if (!parseArg(arg, arg::O(&MessagePattern_PartType_, &part)))
     {
         return PyInt_FromLong(self->object->getNumericValue(
             *((t_messagepattern_part *)part)->object));
@@ -388,7 +392,7 @@ static PyObject *t_messagepattern_getNumericValue(t_messagepattern *self, PyObje
 static PyObject *t_messagepattern_getPluralOffset(t_messagepattern *self, PyObject *arg)
 {
     int i;
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         return PyInt_FromLong(self->object->getPluralOffset(i));
     }
@@ -399,7 +403,7 @@ static PyObject *t_messagepattern_getPluralOffset(t_messagepattern *self, PyObje
 static PyObject *t_messagepattern_getLimitPartIndex(t_messagepattern *self, PyObject *arg)
 {
     int i;
-    if (!parseArg(arg, "i", &i))
+    if (!parseArg(arg, arg::i(&i)))
     {
         return PyInt_FromLong(self->object->getLimitPartIndex(i));
     }

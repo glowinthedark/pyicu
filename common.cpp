@@ -716,18 +716,18 @@ Formattable *toFormattable(PyObject *arg)
     return NULL;
 }
 
-Formattable *toFormattableArray(PyObject *arg, int *len,
+Formattable *toFormattableArray(PyObject *arg, size_t *len,
                                 classid id, PyTypeObject *type)
 {
     if (PySequence_Check(arg))
     {
-        *len = (int) PySequence_Size(arg);
+        *len = PySequence_Size(arg);
         Formattable *array = new Formattable[*len + 1];
 
         if (!array)
           return (Formattable *) PyErr_NoMemory();
 
-        for (int i = 0; i < *len; i++) {
+        for (size_t i = 0; i < *len; i++) {
             PyObject *obj = PySequence_GetItem(arg, i);
 
             if (isInstance(obj, id, type))
@@ -1468,16 +1468,18 @@ int _parseArgs(PyObject **args, int count, const char *types, ...)
 
           case 'R':           /* array of wrapped ICU objects */
           {
-              typedef UObject *(*convFn)(PyObject *, int *,
+              typedef UObject *(*convFn)(PyObject *, size_t *,
                                          classid, PyTypeObject *);
               UObject **array = va_arg(list, UObject **);
               int *len = va_arg(list, int *);
               classid id = va_arg(list, classid);
               PyTypeObject *type = va_arg(list, PyTypeObject *);
               convFn fn = va_arg(list, convFn);
-              *array = fn(arg, len, id, type);
+              size_t size;
+              *array = fn(arg, &size, id, type);
               if (!*array)
                   return -1;
+              *len = (int) size;
               break;
           }
 
