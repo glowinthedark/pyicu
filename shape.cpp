@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2015 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,8 @@
 #include "bases.h"
 #include "shape.h"
 #include "macros.h"
+
+#include "arg.h"
 
 /* Shape */
 
@@ -71,11 +73,11 @@ static int t_shape_init(t_shape *self, PyObject *args, PyObject *kwds)
 static PyObject *t_shape_shapeArabic(PyTypeObject *type, PyObject *args)
 {
     UnicodeString *u, _u;
-    uint32_t options = 0;
+    int options;
 
     switch (PyTuple_Size(args)) {
       case 2:
-        if (!parseArgs(args, "Si", &u, &_u, &options))
+        if (!parseArgs(args, arg::S(&u, &_u), arg::i(&options)))
         {
             const int32_t len = u->length();
             const int32_t capacity = len * 4 + 32;
