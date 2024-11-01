@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2004-2019 Open Source Applications Foundation.
+ * Copyright (c) 2004-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -418,37 +418,6 @@ PyTypeObject name##Type_ = {                                            \
         return (PyObject *) self;                           \
     }
 
-
-#define DEFINE_RICHCMP(name, t_name) \
-    static PyObject *t_name ## _richcmp(t_name *self,                     \
-                                        PyObject *arg, int op)            \
-    {                                                                     \
-        int b = 0;                                                        \
-        name *object;                                                     \
-        if (!parseArg(arg, "P", TYPE_CLASSID(name), &object))             \
-        {                                                                 \
-            switch (op) {                                                 \
-              case Py_EQ:                                                 \
-              case Py_NE:                                                 \
-                b = *self->object == *object;                             \
-                if (op == Py_EQ)                                          \
-                    Py_RETURN_BOOL(b);                                    \
-                Py_RETURN_BOOL(!b);                                       \
-              default:                                                    \
-                PyErr_SetNone(PyExc_NotImplementedError);                 \
-                return NULL;                                              \
-            }                                                             \
-        }                                                                 \
-        switch (op) {                                                     \
-          case Py_EQ:                                                     \
-            Py_RETURN_FALSE;                                              \
-          case Py_NE:                                                     \
-            Py_RETURN_TRUE;                                               \
-          default:                                                        \
-            PyErr_SetNone(PyExc_NotImplementedError);                     \
-            return NULL;                                                  \
-        }                                                                 \
-    }
 
 #define DEFINE_RICHCMP__ARG__(name, t_name) \
     static PyObject *t_name ## _richcmp(t_name *self,                     \

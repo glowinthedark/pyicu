@@ -120,7 +120,7 @@ static int t_charsetdetector_init(t_charsetdetector *self,
 {
     const char *text;
     charsArg encoding;
-    int textSize;
+    size_t textSize;
 
     switch (PyTuple_Size(args)) {
       case 0:
@@ -170,12 +170,12 @@ static PyObject *t_charsetdetector_setText(t_charsetdetector *self,
                                            PyObject *arg)
 {
     const char *text;
-    int size;
+    size_t len;
 
-    if (!parseArg(arg, arg::k(&text, &size)))
+    if (!parseArg(arg, arg::k(&text, &len)))
     {
         /* ref'd */
-        STATUS_CALL(ucsdet_setText(self->object, text, size, &status));
+        STATUS_CALL(ucsdet_setText(self->object, text, len, &status));
 
         Py_INCREF(arg);
         Py_XDECREF(self->text);
@@ -191,12 +191,12 @@ static PyObject *t_charsetdetector_setDeclaredEncoding(t_charsetdetector *self,
                                                        PyObject *arg)
 {
     const char *encoding;
-    int size;
+    size_t len;
 
-    if (!parseArg(arg, arg::k(&encoding, &size)))
+    if (!parseArg(arg, arg::k(&encoding, &len)))
     {
         /* copied */
-        STATUS_CALL(ucsdet_setDeclaredEncoding(self->object, encoding, size,
+        STATUS_CALL(ucsdet_setDeclaredEncoding(self->object, encoding, len,
                                                &status));
         Py_RETURN_NONE;
     }

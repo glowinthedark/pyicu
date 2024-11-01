@@ -28,14 +28,6 @@
 
 #include "common.h"
 
-#ifdef parseArgs
-#undef parseArgs
-#endif
-
-#ifdef parseArg
-#undef parseArg
-#endif
-
 namespace arg {
 
 class BooleanStrict {
@@ -57,6 +49,7 @@ public:
             *b = 0;
             return 0;
         }
+
         return -1;
     }
 };
@@ -73,10 +66,12 @@ public:
     int parse(PyObject *arg) const
     {
         int res = PyObject_IsTrue(arg);
+
         if (res == 0 || res == 1) {
             *b = (UBool) res;
             return 0;
         }
+
         return -1;
     }
 };
@@ -116,18 +111,23 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyFloat_Check(arg) || PyInt_Check(arg) || PyLong_Check(arg))
-        {
-            if (PyFloat_Check(arg))
-                *d = PyFloat_AsDouble(arg);
-#if PY_MAJOR_VERSION < 3
-            else if (PyInt_Check(arg))
-                *d = (double) PyInt_AsLong(arg);
-#endif
-            else
-                *d = PyLong_AsDouble(arg);
+        if (PyFloat_Check(arg)) {
+            *d = PyFloat_AsDouble(arg);
             return 0;
         }
+
+#if PY_MAJOR_VERSION < 3
+        if (PyInt_Check(arg)) {
+            *d = (double) PyInt_AsLong(arg);
+            return 0;
+        }
+#endif
+
+        if (PyInt_Check(arg) || PyLong_Check(arg)) {
+            *d = PyLong_AsDouble(arg);
+            return 0;
+        }
+
         return -1;
     }
 };
@@ -155,6 +155,7 @@ public:
                       PyInt_Check(obj) ||
                       PyLong_Check(obj));
             Py_DECREF(obj);
+
             if (!ok)
                 return -1;
         }
@@ -178,16 +179,17 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyInt_Check(arg)) {
+        if (!PyInt_Check(arg))
+            return -1;
+
 #if PY_MAJOR_VERSION >= 3
-            if ((*n = PyLong_AsLong(arg)) == -1 && PyErr_Occurred())
-                return -1;
+        if ((*n = PyLong_AsLong(arg)) == -1 && PyErr_Occurred())
+            return -1;
 #else
-            *n = (int) PyInt_AsLong(arg);
+        *n = (int) PyInt_AsLong(arg);
 #endif
-            return 0;
-        }
-        return -1;
+
+        return 0;
     }
 };
 
@@ -217,6 +219,7 @@ public:
             PyObject *obj = PySequence_GetItem(arg, 0);
             int ok = (PyInt_Check(obj) || PyLong_Check(obj));
             Py_DECREF(obj);
+
             if (!ok)
                 return -1;
         }
@@ -247,6 +250,7 @@ public:
     {
         if (!(PyLong_Check(arg) || PyInt_Check(arg)))
             return -1;
+
         *l = PyLong_AsLongLong(arg);
         return 0;
     }
@@ -265,6 +269,26 @@ public:
     {
         if (!isDate(arg))
             return -1;
+
+        *d = PyObject_AsUDate(arg);
+        return 0;
+    }
+};
+
+class DateExact {
+private:
+    UDate *const d;
+
+public:
+    DateExact() = delete;
+
+    explicit DateExact(UDate *param) noexcept : d(param) {}
+
+    int parse(PyObject *arg) const
+    {
+        if (!isDateExact(arg))
+            return -1;
+
         *d = PyObject_AsUDate(arg);
         return 0;
     }
@@ -273,20 +297,21 @@ public:
 class BytesToCStringAndSize {
 private:
     const char **const data;
-    int *const size;
+    size_t *const len;
 
 public:
     BytesToCStringAndSize() = delete;
 
-    explicit BytesToCStringAndSize(const char **data_, int *size_) noexcept
-        : data(data_), size(size_) {}
+    explicit BytesToCStringAndSize(const char **param1, size_t *param2) noexcept
+        : data(param1), len(param2) {}
 
     int parse(PyObject *arg) const
     {
         if (!PyBytes_Check(arg))
             return -1;
+
         *data = PyBytes_AS_STRING(arg);
-        *size = (int) PyBytes_GET_SIZE(arg);
+        *len = PyBytes_GET_SIZE(arg);
         return 0;
     }
 };
@@ -352,17 +377,17 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PySequence_Check(arg)) {
-            if (PySequence_Length(arg) > 0) {
-                PyObject *obj = PySequence_GetItem(arg, 0);
-                int ok = isInstance(obj, id, type);
-
-                Py_DECREF(obj);
-                if (!ok)
-                    return -1;
-            }
-        } else {
+        if (!PySequence_Check(arg))
             return -1;
+
+        if (PySequence_Length(arg) > 0)
+        {
+            PyObject *obj = PySequence_GetItem(arg, 0);
+            int ok = isInstance(obj, id, type);
+            Py_DECREF(obj);
+
+            if (!ok)
+                return -1;
         }
 
         *array = reinterpret_cast<T **>(pl2cpa(arg, len, id, type));
@@ -390,17 +415,17 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PySequence_Check(arg)) {
-            if (PySequence_Length(arg) > 0) {
-                PyObject *obj = PySequence_GetItem(arg, 0);
-                int ok = isInstance(obj, id, type);
-
-                Py_DECREF(obj);
-                if (!ok)
-                    return -1;
-            }
-        } else {
+        if (!PySequence_Check(arg))
             return -1;
+
+        if (PySequence_Length(arg) > 0)
+        {
+            PyObject *obj = PySequence_GetItem(arg, 0);
+            int ok = isInstance(obj, id, type);
+            Py_DECREF(obj);
+
+            if (!ok)
+                return -1;
         }
 
         *array = fn(arg, len, id, type);
@@ -444,14 +469,17 @@ public:
 #endif
             if (bytes == NULL)
                 return -1;
+
             p->own(bytes);
             return 0;
         }
-        else if (PyBytes_Check(arg))
+
+        if (PyBytes_Check(arg))
         {
             p->borrow(arg);
             return 0;
         }
+
         return -1;
     }
 };
@@ -473,14 +501,17 @@ public:
             PyObject *bytes = PyUnicode_AsUTF8String(arg);
             if (bytes == NULL)
                 return -1;
+
             p->own(bytes);
             return 0;
         }
-        else if (PyBytes_Check(arg))
+
+        if (PyBytes_Check(arg))
         {
             p->borrow(arg);
             return 0;
         }
+
         return -1;
     }
 };
@@ -498,18 +529,17 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PySequence_Check(arg))
-        {
-            if (PySequence_Length(arg) > 0)
-            {
-                PyObject *obj = PySequence_GetItem(arg, 0);
-                int ok = PyBytes_Check(obj) || PyUnicode_Check(obj);
-                Py_DECREF(obj);
-                if (!ok)
-                    return -1;
-            }
-        } else {
+        if (!PySequence_Check(arg))
             return -1;
+
+        if (PySequence_Length(arg) > 0)
+        {
+            PyObject *obj = PySequence_GetItem(arg, 0);
+            int ok = PyBytes_Check(obj) || PyUnicode_Check(obj);
+            Py_DECREF(obj);
+
+            if (!ok)
+                return -1;
         }
 
         *array = toCharsArgArray(arg, len);
@@ -533,22 +563,22 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyBytes_Check(arg) || PyUnicode_Check(arg) || isUnicodeString(arg))
-        {
-            if (PyObject_TypeCheck(arg, &UObjectType_))
-              *u = (UnicodeString *) ((t_uobject *) arg)->object;
-            else
-            {
-                try {
-                    PyObject_AsUnicodeString(arg, *_u);
-                    *u = _u;
-                } catch (ICUException e) {
-                    e.reportError();
-                    return -1;
-                }
+        if (isUnicodeString(arg)) {
+            *u = (UnicodeString *) ((t_uobject *) arg)->object;
+            return 0;
+        }
+
+        if (PyBytes_Check(arg) || PyUnicode_Check(arg)) {
+            try {
+                PyObject_AsUnicodeString(arg, *_u);
+                *u = _u;
+            } catch (ICUException e) {
+                e.reportError();
+                return -1;
             }
             return 0;
         }
+
         return -1;
     }
 };
@@ -566,25 +596,23 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyBytes_Check(arg) || PyUnicode_Check(arg) ||  isUnicodeString(arg))
-        {
-            if (PyObject_TypeCheck(arg, &UObjectType_))
-            {
-                *u = (UnicodeString *) ((t_uobject *) arg)->object;
-                Py_INCREF(arg); Py_XDECREF(*obj); *obj = arg;
-            }
-            else
-            {
-                try {
-                    *u = PyObject_AsUnicodeString(arg);
-                    Py_XDECREF(*obj); *obj = wrap_UnicodeString(*u, T_OWNED);
-                } catch (ICUException e) {
-                    e.reportError();
-                    return -1;
-                }
+        if (isUnicodeString(arg)) {
+            *u = (UnicodeString *) ((t_uobject *) arg)->object;
+            Py_INCREF(arg); Py_XDECREF(*obj); *obj = arg;
+            return 0;
+        }
+
+        if (PyBytes_Check(arg) || PyUnicode_Check(arg)) {
+            try {
+                *u = PyObject_AsUnicodeString(arg);
+                Py_XDECREF(*obj); *obj = wrap_UnicodeString(*u, T_OWNED);
+            } catch (ICUException e) {
+                e.reportError();
+                return -1;
             }
             return 0;
         }
+
         return -1;
     }
 };
@@ -601,12 +629,11 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyBytes_Check(arg))
-        {
-            *obj = arg;
-            return 0;
-        }
-        return -1;
+        if (!PyBytes_Check(arg))
+            return -1;
+
+        *obj = arg;
+        return 0;
     }
 };
 
@@ -622,12 +649,11 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PyBytes_Check(arg))
-        {
-            *c = PyBytes_AS_STRING(arg);
-            return 0;
-        }
-        return -1;
+        if (!PyBytes_Check(arg))
+            return -1;
+
+        *c = PyBytes_AS_STRING(arg);
+        return 0;
     }
 };
 
@@ -665,12 +691,11 @@ public:
             return -1;
 
         try {
-            *u = PyObject_AsUnicodeString(arg);
+            *u = PyObject_AsUnicodeString(arg);  // a new UnicodeString
         } catch (ICUException e) {
             e.reportError();
             return -1;
         }
-
         return 0;
     }
 };
@@ -713,17 +738,18 @@ public:
 
     int parse(PyObject *arg) const
     {
-        if (PySequence_Check(arg))
+        if (!PySequence_Check(arg))
+            return -1;
+
+        if (PySequence_Length(arg) > 0)
         {
-            if (PySequence_Length(arg) > 0)
-            {
-                PyObject *obj = PySequence_GetItem(arg, 0);
-                int ok = (PyBytes_Check(obj) || PyUnicode_Check(obj) ||
-                          isUnicodeString(obj));
-                Py_DECREF(obj);
-                if (!ok)
-                    return -1;
-            }
+            PyObject *obj = PySequence_GetItem(arg, 0);
+            int ok = (PyBytes_Check(obj) || PyUnicode_Check(obj) ||
+                      isUnicodeString(obj));
+            Py_DECREF(obj);
+
+            if (!ok)
+                return -1;
         }
 
         *array = toUnicodeStringArray(arg, len);
@@ -818,6 +844,7 @@ _IS_POD(BooleanStrict);
 _IS_POD(BytesToCStringAndSize);
 _IS_POD(CString);
 _IS_POD(Date);
+_IS_POD(DateExact);
 _IS_POD(Double);
 _IS_POD(DoubleArray);
 _IS_POD(ICUObject<UObject>);
@@ -851,6 +878,7 @@ using b = Boolean;
 using C = PythonBytes;
 using c = CString;
 using D = Date;
+using E = DateExact;
 using d = Double;
 using F = DoubleArray;
 using f = StringOrUnicodeToFSCharsArg;

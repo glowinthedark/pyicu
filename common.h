@@ -1,5 +1,5 @@
 /* ====================================================================
- * Copyright (c) 2005-2019 Open Source Applications Foundation.
+ * Copyright (c) 2005-2024 Open Source Applications Foundation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -327,8 +327,8 @@ void _init_common(PyObject *m);
 
 class Buffer {
 public:
-    explicit Buffer(int32_t len) :
-    size(len), buffer(u.getBuffer(len)) {}
+    explicit Buffer(int32_t len)
+        : size(len), buffer(u.getBuffer(len)) {}
     ~Buffer() {
         u.releaseBuffer(0);
     }
@@ -431,41 +431,15 @@ public:
     }
 };
 
-#if defined(_MSC_VER) || defined(PYPY_VERSION)
-
-#define parseArgs __parseArgs
-#define parseArg __parseArg
-
-int __parseArgs(PyObject *args, const char *types, ...);
-int __parseArg(PyObject *arg, const char *types, ...);
-
-#ifdef PYPY_VERSION
-int _parseArgs(PyObject *args, int count, const char *types, va_list list);
-#else
-int _parseArgs(PyObject **args, int count, const char *types, va_list list);
-#endif
-
-#else
-
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wvariadic-macros"
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #endif
 
-#define parseArgs(args, types, rest...) \
-    _parseArgs(((PyTupleObject *)(args))->ob_item, \
-               (int) PyObject_Size(args), types, ##rest)
-
-#define parseArg(arg, types, rest...) \
-    _parseArgs(&(arg), 1, types, ##rest)
-
-int _parseArgs(PyObject **args, int count, const char *types, ...);
-
-#endif
-
 int isDate(PyObject *object);
+int isDateExact(PyObject *object);
 int isUnicodeString(PyObject *arg);
-int32_t toUChar32(UnicodeString& u, UChar32 *c, UErrorCode& status);
+int32_t toUChar32(UnicodeString& u, UChar32 *c, UErrorCode &status);
 UnicodeString fromUChar32(UChar32 c);
 
 int isInstance(PyObject *arg, classid id, PyTypeObject *type);
