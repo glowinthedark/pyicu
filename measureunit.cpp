@@ -1300,8 +1300,7 @@ static int t_currencyunit_init(t_currencyunit *self,
                                PyObject *args, PyObject *kwds)
 {
     UErrorCode status = U_ZERO_ERROR;
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
     if (!parseArgs(args, arg::S(&u, &_u)))
     {
@@ -1385,8 +1384,7 @@ static int t_currencyamount_init(t_currencyamount *self,
     UErrorCode status = U_ZERO_ERROR;
     Formattable *f;
     double d;
-    UnicodeString *u;
-    UnicodeString _u;
+    UnicodeString *u, _u;
 
     if (!parseArgs(args,
                    arg::P<Formattable>(TYPE_CLASSID(Formattable), &f),

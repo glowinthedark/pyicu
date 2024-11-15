@@ -134,6 +134,7 @@ static PyObject *t_unicodeset_applyIntPropertyValue(t_unicodeset *self,
                                                     PyObject *args);
 static PyObject *t_unicodeset_applyPropertyAlias(t_unicodeset *self,
                                                  PyObject *args);
+static PyObject *t_unicodeset_codePoints(t_unicodeset *self);
 static PyObject *t_unicodeset_contains(t_unicodeset *self, PyObject *args);
 static PyObject *t_unicodeset_containsAll(t_unicodeset *self, PyObject *arg);
 static PyObject *t_unicodeset_containsNone(t_unicodeset *self, PyObject *args);
@@ -174,6 +175,7 @@ static PyMethodDef t_unicodeset_methods[] = {
     DECLARE_METHOD(t_unicodeset, applyPattern, METH_O),
     DECLARE_METHOD(t_unicodeset, applyIntPropertyValue, METH_VARARGS),
     DECLARE_METHOD(t_unicodeset, applyPropertyAlias, METH_VARARGS),
+    DECLARE_METHOD(t_unicodeset, codePoints, METH_NOARGS),
     DECLARE_METHOD(t_unicodeset, contains, METH_VARARGS),
     DECLARE_METHOD(t_unicodeset, containsAll, METH_O),
     DECLARE_METHOD(t_unicodeset, containsNone, METH_VARARGS),
@@ -209,10 +211,16 @@ DECLARE_DEALLOC_TYPE(UnicodeSet, t_unicodeset, UnicodeFilter,
 
 /* UnicodeSetIterator */
 
+enum IteratorKind {
+    STRINGS,
+    CODEPOINTS,
+};
+
 class t_unicodesetiterator : public _wrapper {
 public:
     UnicodeSetIterator *object;
     PyObject *set;
+    IteratorKind kind;
 };
 
 static int t_unicodesetiterator_init(t_unicodesetiterator *self,
@@ -1186,6 +1194,17 @@ static PyObject *t_unicodeset_iter(t_unicodeset *self)
                                         (PyObject *) self, NULL);
 }
 
+static PyObject *t_unicodeset_codePoints(t_unicodeset *self)
+{
+    PyObject *kind = PyInt_FromLong(IteratorKind::CODEPOINTS);
+    PyObject *result =
+        PyObject_CallFunctionObjArgs((PyObject *) &UnicodeSetIteratorType_,
+                                     (PyObject *) self, kind, NULL);
+
+    Py_DECREF(kind);
+    return result;
+}
+
 static long t_unicodeset_hash(t_unicodeset *self)
 {
   return (long) self->object->hashCode();
@@ -1257,6 +1276,7 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
                                      PyObject *args, PyObject *kwds)
 {
     UnicodeSet *set;
+    IteratorKind kind = IteratorKind::STRINGS;
 
     switch (PyTuple_Size(args)) {
       case 0:
@@ -1269,6 +1289,19 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
         {
             self->object = new UnicodeSetIterator(*set);
             self->flags = T_OWNED;
+            self->kind = kind;
+            break;
+        }
+        PyErr_SetArgsError((PyObject *) self, "__init__", args);
+        return -1;
+      case 2:
+        if (!parseArgs(args,
+                       arg::p<UnicodeSet>(TYPE_CLASSID(UnicodeSet), &set, &self->set),
+                       arg::Enum<IteratorKind>(&kind)))
+        {
+            self->object = new UnicodeSetIterator(*set);
+            self->flags = T_OWNED;
+            self->kind = kind;
             break;
         }
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
@@ -1293,17 +1326,13 @@ static PyObject *t_unicodesetiterator_isString(t_unicodesetiterator *self)
 static PyObject *t_unicodesetiterator_getCodepoint(t_unicodesetiterator *self)
 {
     UChar32 c = self->object->getCodepoint();
-    UnicodeString u = fromUChar32(c);
-
-    return PyUnicode_FromUnicodeString(&u);
+    return PyInt_FromLong(c);
 }
 
 static PyObject *t_unicodesetiterator_getCodepointEnd(t_unicodesetiterator *self)
 {
     UChar32 c = self->object->getCodepointEnd();
-    UnicodeString u = fromUChar32(c);
-
-    return PyUnicode_FromUnicodeString(&u);
+    return PyInt_FromLong(c);
 }
 
 static PyObject *t_unicodesetiterator_getString(t_unicodesetiterator *self)
@@ -1364,13 +1393,26 @@ static PyObject *t_unicodesetiterator_iter(t_unicodesetiterator *self)
 
 static PyObject *t_unicodesetiterator_iter_next(t_unicodesetiterator *self)
 {
-    if (!self->object->next())
-    {
-        PyErr_SetNone(PyExc_StopIteration);
-        return NULL;
-    }
+    switch (self->kind) {
+      case IteratorKind::STRINGS:
+        if (!self->object->next())
+        {
+            PyErr_SetNone(PyExc_StopIteration);
+            return NULL;
+        }
+        return t_unicodesetiterator_getString(self);
 
-    return t_unicodesetiterator_getString(self);
+      case IteratorKind::CODEPOINTS:
+        if (!self->object->next())
+        {
+            PyErr_SetNone(PyExc_StopIteration);
+            return NULL;
+        }
+        return t_unicodesetiterator_getCodepoint(self);
+
+      default:
+        return PyErr_Format(PyExc_ValueError, "'%d' is not a valid IteratorKind enum value", self->kind);
+    }
 }
 
 
