@@ -32,8 +32,8 @@ class TestUnicodeSet(TestCase):
 
         a = UnicodeSet("[a-d{abc}{de}]")
 
-        self.assertTrue(['a', 'b', 'c', 'd', 'abc', 'de'], list(a))
-        self.assertTrue(['a', 'b', 'c', 'd'], a.codePoints())
-        self.assertTrue(['abc', 'de'], a.strings())
+        self.assertEqual(['a', 'b', 'c', 'd', 'abc', 'de'], list(a))
+        self.assertEqual(['a', 'b', 'c', 'd'], list(a.codePoints()))
+        self.assertEqual(['abc', 'de'], list(a.strings()))
 
         

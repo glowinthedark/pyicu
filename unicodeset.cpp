@@ -1304,8 +1304,6 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
             self->object = new UnicodeSetIterator(*set);
             self->flags = T_OWNED;
             self->kind = kind;
-            if (kind == IteratorKind::STRINGS)
-                self->object->skipToStrings();
             break;
         }
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
@@ -1318,6 +1316,8 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
             self->object = new UnicodeSetIterator(*set);
             self->flags = T_OWNED;
             self->kind = kind;
+            if (kind == IteratorKind::STRINGS)
+                self->object->skipToStrings();
             break;
         }
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
