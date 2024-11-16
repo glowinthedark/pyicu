@@ -159,6 +159,7 @@ static PyObject *t_unicodeset_getRangeStart(t_unicodeset *self, PyObject *arg);
 static PyObject *t_unicodeset_getRangeEnd(t_unicodeset *self, PyObject *arg);
 static PyObject *t_unicodeset_codePoints(t_unicodeset *self);
 static PyObject *t_unicodeset_strings(t_unicodeset *self);
+static PyObject *t_unicodeset_ranges(t_unicodeset *self);
 static PyObject *t_unicodeset_resemblesPattern(PyTypeObject *type,
                                                PyObject *args);
 static PyObject *t_unicodeset_createFrom(PyTypeObject *type, PyObject *arg);
@@ -201,6 +202,7 @@ static PyMethodDef t_unicodeset_methods[] = {
     DECLARE_METHOD(t_unicodeset, getRangeEnd, METH_O),
     DECLARE_METHOD(t_unicodeset, codePoints, METH_NOARGS),
     DECLARE_METHOD(t_unicodeset, strings, METH_NOARGS),
+    DECLARE_METHOD(t_unicodeset, ranges, METH_NOARGS),
     DECLARE_METHOD(t_unicodeset, resemblesPattern, METH_VARARGS | METH_CLASS),
     DECLARE_METHOD(t_unicodeset, createFrom, METH_O | METH_CLASS),
     DECLARE_METHOD(t_unicodeset, createFromAll, METH_O | METH_CLASS),
@@ -217,6 +219,7 @@ enum IteratorKind {
     ANY,
     STRINGS,
     CODEPOINTS,
+    RANGES,
 };
 
 class t_unicodesetiterator : public _wrapper {
@@ -1219,6 +1222,17 @@ static PyObject *t_unicodeset_strings(t_unicodeset *self)
     return result;
 }
 
+static PyObject *t_unicodeset_ranges(t_unicodeset *self)
+{
+    PyObject *kind = PyInt_FromLong(IteratorKind::RANGES);
+    PyObject *result =
+        PyObject_CallFunctionObjArgs((PyObject *) &UnicodeSetIteratorType_,
+                                     (PyObject *) self, kind, NULL);
+
+    Py_DECREF(kind);
+    return result;
+}
+
 static long t_unicodeset_hash(t_unicodeset *self)
 {
   return (long) self->object->hashCode();
@@ -1437,6 +1451,18 @@ static PyObject *t_unicodesetiterator_iter_next(t_unicodesetiterator *self)
             return NULL;
         }
         return t_unicodesetiterator_getCodepoint(self);
+
+      case IteratorKind::RANGES: {
+        if (!self->object->nextRange() || self->object->isString())
+        {
+            PyErr_SetNone(PyExc_StopIteration);
+            return NULL;
+        }
+        PyObject *tuple = PyTuple_New(2);
+        PyTuple_SET_ITEM(tuple, 0, t_unicodesetiterator_getCodepoint(self));
+        PyTuple_SET_ITEM(tuple, 1, t_unicodesetiterator_getCodepointEnd(self));
+        return tuple;
+      }
 
       default:
         return PyErr_Format(PyExc_ValueError, "'%d' is not a valid IteratorKind enum value", self->kind);
