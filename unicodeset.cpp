@@ -134,7 +134,6 @@ static PyObject *t_unicodeset_applyIntPropertyValue(t_unicodeset *self,
                                                     PyObject *args);
 static PyObject *t_unicodeset_applyPropertyAlias(t_unicodeset *self,
                                                  PyObject *args);
-static PyObject *t_unicodeset_codePoints(t_unicodeset *self);
 static PyObject *t_unicodeset_contains(t_unicodeset *self, PyObject *args);
 static PyObject *t_unicodeset_containsAll(t_unicodeset *self, PyObject *arg);
 static PyObject *t_unicodeset_containsNone(t_unicodeset *self, PyObject *args);
@@ -158,6 +157,8 @@ static PyObject *t_unicodeset_compact(t_unicodeset *self);
 static PyObject *t_unicodeset_getRangeCount(t_unicodeset *self);
 static PyObject *t_unicodeset_getRangeStart(t_unicodeset *self, PyObject *arg);
 static PyObject *t_unicodeset_getRangeEnd(t_unicodeset *self, PyObject *arg);
+static PyObject *t_unicodeset_codePoints(t_unicodeset *self);
+static PyObject *t_unicodeset_strings(t_unicodeset *self);
 static PyObject *t_unicodeset_resemblesPattern(PyTypeObject *type,
                                                PyObject *args);
 static PyObject *t_unicodeset_createFrom(PyTypeObject *type, PyObject *arg);
@@ -175,7 +176,6 @@ static PyMethodDef t_unicodeset_methods[] = {
     DECLARE_METHOD(t_unicodeset, applyPattern, METH_O),
     DECLARE_METHOD(t_unicodeset, applyIntPropertyValue, METH_VARARGS),
     DECLARE_METHOD(t_unicodeset, applyPropertyAlias, METH_VARARGS),
-    DECLARE_METHOD(t_unicodeset, codePoints, METH_NOARGS),
     DECLARE_METHOD(t_unicodeset, contains, METH_VARARGS),
     DECLARE_METHOD(t_unicodeset, containsAll, METH_O),
     DECLARE_METHOD(t_unicodeset, containsNone, METH_VARARGS),
@@ -199,6 +199,8 @@ static PyMethodDef t_unicodeset_methods[] = {
     DECLARE_METHOD(t_unicodeset, getRangeCount, METH_NOARGS),
     DECLARE_METHOD(t_unicodeset, getRangeStart, METH_O),
     DECLARE_METHOD(t_unicodeset, getRangeEnd, METH_O),
+    DECLARE_METHOD(t_unicodeset, codePoints, METH_NOARGS),
+    DECLARE_METHOD(t_unicodeset, strings, METH_NOARGS),
     DECLARE_METHOD(t_unicodeset, resemblesPattern, METH_VARARGS | METH_CLASS),
     DECLARE_METHOD(t_unicodeset, createFrom, METH_O | METH_CLASS),
     DECLARE_METHOD(t_unicodeset, createFromAll, METH_O | METH_CLASS),
@@ -212,6 +214,7 @@ DECLARE_DEALLOC_TYPE(UnicodeSet, t_unicodeset, UnicodeFilter,
 /* UnicodeSetIterator */
 
 enum IteratorKind {
+    ANY,
     STRINGS,
     CODEPOINTS,
 };
@@ -1205,6 +1208,17 @@ static PyObject *t_unicodeset_codePoints(t_unicodeset *self)
     return result;
 }
 
+static PyObject *t_unicodeset_strings(t_unicodeset *self)
+{
+    PyObject *kind = PyInt_FromLong(IteratorKind::STRINGS);
+    PyObject *result =
+        PyObject_CallFunctionObjArgs((PyObject *) &UnicodeSetIteratorType_,
+                                     (PyObject *) self, kind, NULL);
+
+    Py_DECREF(kind);
+    return result;
+}
+
 static long t_unicodeset_hash(t_unicodeset *self)
 {
   return (long) self->object->hashCode();
@@ -1276,7 +1290,7 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
                                      PyObject *args, PyObject *kwds)
 {
     UnicodeSet *set;
-    IteratorKind kind = IteratorKind::STRINGS;
+    IteratorKind kind = IteratorKind::ANY;
 
     switch (PyTuple_Size(args)) {
       case 0:
@@ -1290,6 +1304,8 @@ static int t_unicodesetiterator_init(t_unicodesetiterator *self,
             self->object = new UnicodeSetIterator(*set);
             self->flags = T_OWNED;
             self->kind = kind;
+            if (kind == IteratorKind::STRINGS)
+                self->object->skipToStrings();
             break;
         }
         PyErr_SetArgsError((PyObject *) self, "__init__", args);
@@ -1326,13 +1342,17 @@ static PyObject *t_unicodesetiterator_isString(t_unicodesetiterator *self)
 static PyObject *t_unicodesetiterator_getCodepoint(t_unicodesetiterator *self)
 {
     UChar32 c = self->object->getCodepoint();
-    return PyInt_FromLong(c);
+    UnicodeString u = fromUChar32(c);
+
+    return PyUnicode_FromUnicodeString(&u);
 }
 
 static PyObject *t_unicodesetiterator_getCodepointEnd(t_unicodesetiterator *self)
 {
     UChar32 c = self->object->getCodepointEnd();
-    return PyInt_FromLong(c);
+    UnicodeString u = fromUChar32(c);
+
+    return PyUnicode_FromUnicodeString(&u);
 }
 
 static PyObject *t_unicodesetiterator_getString(t_unicodesetiterator *self)
@@ -1394,6 +1414,14 @@ static PyObject *t_unicodesetiterator_iter(t_unicodesetiterator *self)
 static PyObject *t_unicodesetiterator_iter_next(t_unicodesetiterator *self)
 {
     switch (self->kind) {
+      case IteratorKind::ANY:
+        if (!self->object->next())
+        {
+            PyErr_SetNone(PyExc_StopIteration);
+            return NULL;
+        }
+        return t_unicodesetiterator_getString(self);
+
       case IteratorKind::STRINGS:
         if (!self->object->next())
         {
@@ -1403,7 +1431,7 @@ static PyObject *t_unicodesetiterator_iter_next(t_unicodesetiterator *self)
         return t_unicodesetiterator_getString(self);
 
       case IteratorKind::CODEPOINTS:
-        if (!self->object->next())
+        if (!self->object->next() || self->object->isString())
         {
             PyErr_SetNone(PyExc_StopIteration);
             return NULL;

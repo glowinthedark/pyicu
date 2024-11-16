@@ -1,7 +1,7 @@
 Version 2.14 ->
 ----------------------
   - replaced argument parsing with modern C++ solution (Martin Jansche)
-  - added wrapper for UnicodeSet.codePoints()
+  - added wrappers for UnicodeSet.codePoints(), UnicodeSet.strings()
   - 
 
 Version 2.13.1 -> 2.14
