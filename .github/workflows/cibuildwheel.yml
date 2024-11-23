@@ -1,0 +1,143 @@
+name: cibuildwheel
+
+on:
+  workflow_dispatch:
+
+env:
+  PYICU_TAG: v2.14
+  ICU_VERSION: 76
+  ICU_RELEASE: 76-1/icu4c-76_1
+  CIBW_TEST_REQUIRES: pytest six
+  CIBW_TEST_COMMAND: pytest {project}/test
+  CIBW_SKIP: "pp* cp36*"
+  CIBW_TEST_SKIP: "*-*"
+
+jobs:
+  build_win_amd64:
+    name: Build AMD64 wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    env:
+      ICU_ARCH: 64
+      ICU_PLAT: Win64-MSVC2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pypa/cibuildwheel@v2.21.3
+        env:
+          CIBW_ARCHS_WINDOWS: AMD64
+          CIBW_ENVIRONMENT_WINDOWS: INCLUDE="include;$INCLUDE" LIB="lib$ICU_ARCH;$LIB"
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          path: ./wheelhouse/*.whl
+          name: wheels-win-amd64
+          
+  build_win_arm64:
+    name: Build ARM64 wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    env:
+      ICU_ARCH: ARM64
+      ICU_PLAT: WinARM64-MSVC2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pypa/cibuildwheel@v2.21.3
+        env:
+          CIBW_SKIP: "pp* cp36* cp37* cp38* cp39* cp310*"
+          CIBW_ARCHS_WINDOWS: ARM64
+          CIBW_ENVIRONMENT_WINDOWS: INCLUDE="include;$INCLUDE" LIB="lib$ICU_ARCH;$LIB"
+      - uses: actions/upload-artifact@v4
+        with:
+          path: ./wheelhouse/*.whl
+          name: wheels-win-arm64
+          
+  build_mac:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-12, macos-14]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        # architecture: ["x64", "arm64"]
+      fail-fast:
+        false
+
+    name: ${{ matrix.os }}-${{ matrix.python-version }}
+    steps:
+      - name: Checkout repo
+        run: |
+          git clone https://gitlab.pyicu.org/main/pyicu.git .
+
+      - name: Update brew
+        run: |
+          brew update
+          
+      - name: Install brew dependencies
+        run: |
+          brew install \
+             lzo \
+             icu4c \
+             gettext
+          brew link gettext --force
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          
+      - name: Set pip build vars
+        id: envpip
+        run: |
+          echo "C_INCLUDE_PATH=$(brew --prefix lzo)/include:$(brew --prefix lzo)/include/lzo" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=$BREW_PREFIX/Cellar/lib" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$BREW_PREFIX/Cellar/lib/pkgconfig:$(brew --prefix icu4c)/lib/pkgconfig:$(brew --prefix lzo)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$(brew --prefix icu4c)/lib -L$(brew --prefix icu4c)/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I$(brew --prefix icu4c)/include -I$(brew --prefix lzo)/include" >> $GITHUB_ENV
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.21.3
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyicu-${{ matrix.os }}-${{ matrix.python-version }}
+          path: ./wheelhouse/*.whl
+          if-no-files-found: error
+
+  release:
+    needs: [build_win_amd64, build_win_arm64, build_mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        
+        with:
+          path: ./artifacts
+          merge-multiple: true
+          
+      - name: List artifacts
+        run: |
+          pwd
+          echo ${{ github.workspace }}/artifacts
+          ls -alh ${{ github.workspace }}
+          find .
+
+      - name: make release
+        uses: ncipollo/release-action@v1
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.ref_name }}
+          artifacts: "artifacts/*.whl"
+          artifactContentType: application/zip
+          generateReleaseNotes: false
+          makeLatest: true
+          allowUpdates: true
+          tag: ${{ env.PYICU_TAG }}
+        
