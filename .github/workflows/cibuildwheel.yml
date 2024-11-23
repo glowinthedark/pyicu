@@ -69,9 +69,8 @@ jobs:
 
     name: ${{ matrix.os }}-${{ matrix.python-version }}
     steps:
-      - name: Checkout repo
-        run: |
-          git clone https://gitlab.pyicu.org/main/pyicu.git .
+      - name: Checkout
+      - uses: actions/checkout@v4
 
       - name: Update brew
         run: |
