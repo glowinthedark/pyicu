@@ -48,10 +48,10 @@ jobs:
       ICU_PLAT: WinARM64-MSVC2022
     steps:
       - name: checkout
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: build wheel
-      - uses: pypa/cibuildwheel@v2.21.3
+        uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_SKIP: "pp* cp36* cp37* cp38* cp39* cp310*"
           CIBW_ARCHS_WINDOWS: ARM64
@@ -74,7 +74,7 @@ jobs:
     name: ${{ matrix.os }}-${{ matrix.python-version }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Update brew
         run: |
