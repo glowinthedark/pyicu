@@ -23,8 +23,10 @@ jobs:
       ICU_ARCH: 64
       ICU_PLAT: Win64-MSVC2022
     steps:
+      - name: checkout
       - uses: actions/checkout@v4
 
+      - name: build wheel
       - uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_ARCHS_WINDOWS: AMD64
@@ -45,8 +47,10 @@ jobs:
       ICU_ARCH: ARM64
       ICU_PLAT: WinARM64-MSVC2022
     steps:
+      - name: checkout
       - uses: actions/checkout@v4
 
+      - name: build wheel
       - uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_SKIP: "pp* cp36* cp37* cp38* cp39* cp310*"
