@@ -1,0 +1,107 @@
+name: WHL linux windows, cibuildwheel
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_ref:
+        description: 'custom ref|branch|tag, use hardcoded tag if empty'
+        required: false
+      skip_release:
+        description: 'SKIP creating a release from artifacts: "y" to skip'
+        required: false
+env:
+  PYICU_TAG: v2.14
+  ICU_VERSION: 76
+  ICU_RELEASE: 76-1/icu4c-76_1
+  # CIBW_TEST_REQUIRES: pytest six
+  # CIBW_TEST_COMMAND: pytest {project}/test
+  # CIBW_SKIP: "pp* cp36*"
+  # CIBW_TEST_SKIP: "*-*"
+
+jobs:
+  build_wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        # os: [ubuntu-latest, windows-latest]
+        python-version: [3.12, 3.13]
+        # python-version: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]
+    steps:
+    # skip checkout
+      # - name: Checkout code
+      #   uses: actions/checkout@v4
+      - name: Custom Checkout repo
+        run: |
+          git clone -b ${{ github.event.inputs.custom_ref || env.PYICU_TAG }} https://gitlab.pyicu.org/main/pyicu.git .
+      
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # - name: Install dependencies on Ubuntu
+      #   if: runner.os == 'Linux'
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y zlib1g-dev lzop libicu-dev
+
+      - name: Install pip modules
+        # https://pypi.org/project/cibuildwheel/
+        run: |
+          python3 -m pip install wheel setuptools build cibuildwheel
+
+      - name: Build wheels
+        if: false
+        env:
+          CIBW_BUILD: cp${{ matrix.python-version }}-*
+          CIBW_SKIP: cp27-*
+          CIBW_TEST_SKIP: '*'
+          # CIBW_TEST_REQUIRES: pytest
+          # CIBW_TEST_COMMAND: "pytest {project}/tests"
+        run: cibuildwheel --output-dir wheelhouse
+
+      - name: Pip build
+        run: |
+          python -m build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyicu-${{ matrix.os }}-${{ matrix.python-version }}
+          path: ./dist/*.whl
+          if-no-files-found: error
+
+  release:
+    if: github.event.inputs.skip_release != 'y'
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        
+        with:
+          path: ./artifacts
+          merge-multiple: true
+          
+      - name: List artifacts
+        run: |
+          pwd
+          echo ${{ github.workspace }}/artifacts
+          ls -alh ${{ github.workspace }}
+          find .       
+
+      - name: make release
+        uses: ncipollo/release-action@v1
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.ref_name }}
+          artifacts: "artifacts/*.whl"
+          artifactContentType: application/zip
+          generateReleaseNotes: false
+          makeLatest: true
+          allowUpdates: true
+          tag: ${{ github.event.inputs.custom_ref || env.PYICU_TAG }}
