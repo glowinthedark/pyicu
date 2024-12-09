@@ -29,12 +29,8 @@ jobs:
         # python-version: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]
     steps:
     # skip checkout
-      # - name: Checkout code
-      #   uses: actions/checkout@v4
-      - name: Custom Checkout repo
-        run: |
-          git clone -b ${{ github.event.inputs.custom_ref || env.PYICU_TAG }} https://gitlab.pyicu.org/main/pyicu.git .
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
