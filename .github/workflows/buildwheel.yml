@@ -70,6 +70,11 @@ jobs:
         with:
           platforms: all
 
+      - name: linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install libunistring-dev libicu-dev
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
         with:
